@@ -872,6 +872,19 @@ tbody tr:hover {
     display: block;
   }
 
+  .sidebar-nav,
+  .sidebar-section,
+  .sidebar-footer {
+    display: none;
+  }
+
+  .sidebar.open .sidebar-nav,
+  .sidebar.open .sidebar-section,
+  .sidebar.open .sidebar-footer {
+    display: flex;
+    flex-direction: column;
+  }
+
   .member-list {
     max-height: 0;
     transition: max-height 0.2s ease;
@@ -881,14 +894,6 @@ tbody tr:hover {
   .sidebar.open .member-list {
     max-height: 260px;
     overflow-y: auto;
-  }
-
-  .sidebar-footer {
-    display: none;
-  }
-
-  .sidebar.open .sidebar-footer {
-    display: flex;
   }
 
   .main-content {
