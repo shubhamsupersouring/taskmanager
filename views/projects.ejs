@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+
+  <section class="tasks-layout">
+    <div class="card">
+      <div class="card-header">
+        <h2>Projects</h2>
+      </div>
+
+      <div class="card-body">
+        <form method="post" action="/projects/add" class="filters-form">
+          <div class="form-group">
+            <label for="projectName">Project name</label>
+            <input id="projectName" name="name" type="text" required />
+          </div>
+
+          <div class="form-group" style="flex: 1;">
+            <label for="projectDescription">Description (optional)</label>
+            <input id="projectDescription" name="description" type="text" />
+          </div>
+
+          <div class="filters-actions">
+            <button type="submit" class="btn btn-primary">Add / Update</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="table-wrapper" style="margin-top: 1rem;">
+        <table class="tasks-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (projects && projects.length) { %>
+              <% projects.forEach(function(project) { %>
+                <tr>
+                  <td><%= project.name %></td>
+                  <td><%= project.description || '-' %></td>
+                  <td><%= new Date(project.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="3" class="empty-state">No projects defined yet.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <script src="/script.js"></script>
+      </section>
+    </div>
+  </body>
+</html>
+

@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+  <section class="summary-layout">
+    <div class="card">
+      <div class="card-header">
+        <h2><%= type === 'team' ? 'Team Weekly AI Summary' : ('AI Summary - ' + targetName) %></h2>
+        <a href="<%= backUrl %>" class="btn btn-outline btn-sm">Back</a>
+      </div>
+
+      <div class="card-body">
+        <p class="text-muted">
+          Date range: <strong><%= dateRangeLabel %></strong>
+        </p>
+
+        <form method="get" action="<%= type === 'team' ? '/summary/team' : ('/summary/member/' + encodeURIComponent(targetName && targetName.id ? targetName.id : '')) %>" class="filters-form" style="margin-bottom: 0.75rem;">
+          <% if (typeof memberId !== 'undefined' && type === 'member') { %>
+            <input type="hidden" name="id" value="<%= memberId %>" />
+          <% } %>
+          <div class="form-group" style="flex:1;">
+            <label for="customInstructions">Custom instructions (optional)</label>
+            <textarea id="customInstructions" name="custom" rows="2" placeholder="E.g. Focus more on blockers, or summarize impact for leadership."><%= (typeof queryCustom !== 'undefined' && queryCustom) ? queryCustom : '' %></textarea>
+          </div>
+          <div class="filters-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Regenerate</button>
+          </div>
+        </form>
+
+        <% if (errorMessage) { %>
+          <div class="banner banner-error">
+            <%= errorMessage %>
+          </div>
+        <% } %>
+
+        <% if (summaryText) { %>
+          <div class="summary-card">
+            <div class="summary-content"><%- summaryText %></div>
+          </div>
+        <% } else if (!errorMessage) { %>
+          <p class="empty-state">No summary available.</p>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <script src="/script.js"></script>
+      </section>
+    </div>
+  </body>
+</html>
+

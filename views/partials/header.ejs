@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle ? pageTitle + ' | WorkTrack' : 'WorkTrack' %></title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <%- include('sidebar') %>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <h1 class="page-title"><%= pageTitle || 'Dashboard' %></h1>
+          </div>
+          <div class="top-bar-right">
+            <div class="today-date">
+              <span>Today</span>
+              <strong><%= todayFormatted || '' %></strong>
+            </div>
+          </div>
+        </header>
+
+        <% if ((successMessages && successMessages.length) || (errorMessages && errorMessages.length)) { %>
+          <div class="flash-container">
+            <% (successMessages || []).forEach(function(msg) { %>
+              <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+            <% (errorMessages || []).forEach(function(msg) { %>
+              <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <section class="content-inner">
+

@@ -1,0 +1,64 @@
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-circle">W</div>
+    <div class="logo-text">
+      <span class="logo-title">WorkTrack</span>
+      <span class="logo-subtitle">Team Work Portal</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-link <%= currentPath === '/' ? 'active' : '' %>">
+      Dashboard
+    </a>
+    <a href="/tasks" class="nav-link <%= currentPath.startsWith('/tasks') ? 'active' : '' %>">
+      Tasks
+    </a>
+    <% if (currentUser && currentUser.role === 'superadmin') { %>
+      <a href="/projects" class="nav-link <%= currentPath.startsWith('/projects') ? 'active' : '' %>">
+        Projects
+      </a>
+      <a href="/summary/team" class="nav-link <%= currentPath.startsWith('/summary') ? 'active' : '' %>">
+        Team Summary
+      </a>
+    <% } %>
+  </nav>
+
+  <% if (currentUser && currentUser.role === 'superadmin') { %>
+    <div class="sidebar-section">
+      <div class="sidebar-section-header">
+        <span>Members</span>
+      </div>
+      <div class="member-list">
+        <% (sidebarMembers || []).forEach(function(member) { %>
+          <a href="/members/<%= member.id %>" class="member-link">
+            <span class="member-initial"><%= member.name.charAt(0).toUpperCase() %></span>
+            <span class="member-name"><%= member.name %></span>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="sidebar-footer">
+    <% if (currentUser) { %>
+      <div class="sidebar-user">
+        <div class="user-initial">
+          <%= currentUser.email.charAt(0).toUpperCase() %>
+        </div>
+        <div class="user-meta">
+          <div class="user-email"><%= currentUser.email %></div>
+          <div class="user-role"><%= currentUser.role === 'superadmin' ? 'Admin' : 'Member' %></div>
+        </div>
+      </div>
+      <form method="post" action="/logout" class="sidebar-logout-form">
+        <button type="submit" class="btn btn-outline btn-sm sidebar-logout-btn">Logout</button>
+      </form>
+    <% } %>
+  </div>
+
+  <button class="sidebar-toggle" id="sidebarToggle">
+    ☰
+  </button>
+</aside>
+

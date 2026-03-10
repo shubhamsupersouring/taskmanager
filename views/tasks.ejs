@@ -1,0 +1,204 @@
+<%- include('partials/header') %>
+
+  <section class="tasks-layout">
+    <div class="card">
+      <div class="card-header">
+        <h2>Tasks</h2>
+        <button id="openAddTaskModal" class="btn btn-primary">Add Task</button>
+      </div>
+
+      <div class="filters-bar">
+        <form method="get" action="/tasks" class="filters-form">
+          <% if (currentUser && currentUser.role === 'superadmin') { %>
+            <div class="form-group">
+              <label for="filterMember">Member</label>
+              <select id="filterMember" name="member">
+                <option value="">All</option>
+                <% members.forEach(function(member) { %>
+                  <option value="<%= member.id %>" <%= filters.member == member.id ? 'selected' : '' %>>
+                    <%= member.name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+          <% } %>
+
+          <div class="form-group">
+            <label for="filterDate">Date</label>
+            <input type="date" id="filterDate" name="date" value="<%= filters.date %>" />
+          </div>
+
+          <div class="form-group">
+            <label for="filterStatus">Status</label>
+            <select id="filterStatus" name="status">
+              <option value="">All</option>
+              <option value="in-progress" <%= filters.status === 'in-progress' ? 'selected' : '' %>>In progress</option>
+              <option value="done" <%= filters.status === 'done' ? 'selected' : '' %>>Done</option>
+              <option value="blocked" <%= filters.status === 'blocked' ? 'selected' : '' %>>Blocked</option>
+            </select>
+          </div>
+
+          <div class="filters-actions">
+            <button type="submit" class="btn btn-outline">Apply</button>
+            <a href="/tasks" class="btn-link">Reset</a>
+          </div>
+        </form>
+      </div>
+
+      <div id="weekendWarning" class="banner banner-warning" style="display: <%= isWeekend ? 'block' : 'none' %>;">
+        Today is a holiday — are you sure you want to add a task?
+      </div>
+
+      <div class="table-wrapper">
+        <table class="tasks-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Member</th>
+              <th>Task</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tasksTableBody">
+            <% if (tasks.length) { %>
+              <% tasks.forEach(function(task) { %>
+                <tr data-task-id="<%= task.id %>">
+                  <td><%= task.dateFormatted %></td>
+                  <td><%= task.member_name %></td>
+                  <td><%= task.task %></td>
+                  <td><%= task.project_name || '-' %></td>
+                  <td>
+                    <button
+                      class="status-toggle status-pill <%= 'status-' + task.status %>"
+                      data-task-id="<%= task.id %>"
+                    >
+                      <%= task.status.replace('-', ' ') %>
+                    </button>
+                  </td>
+                  <td>
+                    <button class="btn-link text-danger delete-task" data-task-id="<%= task.id %>">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="5" class="empty-state">No tasks found.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="task-cards" id="taskCardsContainer">
+        <% if (tasks.length) { %>
+          <% tasks.forEach(function(task) { %>
+            <div class="task-card" data-task-id="<%= task.id %>">
+              <div class="task-card-header">
+                <div class="task-card-title"><%= task.task %></div>
+                <button
+                  class="status-toggle status-pill <%= 'status-' + task.status %>"
+                  data-task-id="<%= task.id %>"
+                >
+                  <%= task.status.replace('-', ' ') %>
+                </button>
+              </div>
+              <div class="task-card-body">
+                <div class="task-card-meta">
+                  <span class="task-meta-label">Date</span>
+                  <span class="task-meta-value"><%= task.dateFormatted %></span>
+                </div>
+                <div class="task-card-meta">
+                  <span class="task-meta-label">Member</span>
+                  <span class="task-meta-value"><%= task.member_name %></span>
+                </div>
+                <div class="task-card-meta">
+                  <span class="task-meta-label">Project</span>
+                  <span class="task-meta-value"><%= task.project_name || '-' %></span>
+                </div>
+              </div>
+              <div class="task-card-footer">
+                <button class="btn-link text-danger delete-task" data-task-id="<%= task.id %>">
+                  Delete
+                </button>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p class="empty-state">No tasks found.</p>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal" id="addTaskModal">
+    <div class="modal-backdrop" id="closeAddTaskModal"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add Task</h3>
+        <button class="modal-close" id="closeAddTaskModalBtn">&times;</button>
+      </div>
+      <form method="post" action="/tasks/add" class="modal-body" id="addTaskForm">
+        <% if (currentUser && currentUser.role === 'superadmin') { %>
+          <div class="form-group">
+            <label for="memberId">Member</label>
+            <select id="memberId" name="member_id" required>
+              <option value="">Select member</option>
+              <% members.forEach(function(member) { %>
+                <option value="<%= member.id %>"><%= member.name %></option>
+              <% }) %>
+            </select>
+          </div>
+        <% } %>
+
+        <div class="form-group">
+          <label for="taskDate">Date</label>
+          <input type="date" id="taskDate" name="date" required />
+        </div>
+
+        <div class="form-group">
+          <label for="projectId">Project</label>
+          <select id="projectId" name="project_id">
+            <option value="">Select project</option>
+            <% (projects || []).forEach(function(project) { %>
+              <option value="<%= project.id %>"><%= project.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="taskText">Task</label>
+          <textarea id="taskText" name="task" rows="3" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="taskStatus">Status</label>
+          <select id="taskStatus" name="status">
+            <option value="in-progress">In progress</option>
+            <option value="done">Done</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelAddTask">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    window.initialQuickMemberId = "<%= quickMemberId %>";
+    window.initialQuickDate = "<%= quickDate %>";
+    window.tasksPagination = <%- JSON.stringify(pagination || null) %>;
+  </script>
+  <script src="/script.js"></script>
+      </section>
+    </div>
+  </body>
+</html>
+

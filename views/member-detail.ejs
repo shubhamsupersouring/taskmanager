@@ -1,0 +1,180 @@
+<%- include('partials/header') %>
+
+  <section class="member-detail-layout">
+    <div class="member-header card">
+      <div class="card-header">
+        <h2><%= member.name %></h2>
+        <% if (currentUser && currentUser.role === 'superadmin') { %>
+          <a href="/summary/member/<%= member.id %>" class="btn btn-primary btn-sm">
+            Gemini AI Summary
+          </a>
+        <% } %>
+      </div>
+      <div class="card-body">
+        <p class="text-muted">Role: <strong><%= member.role %></strong></p>
+      </div>
+    </div>
+
+    <div class="member-stats-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3>Stats</h3>
+        </div>
+        <div class="card-body stats-pills">
+          <div class="stat-pill-item">
+            <span class="stat-label">Total tasks</span>
+            <span class="stat-value"><%= totalTasks %></span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Done</span>
+            <span class="stat-pill status-done"><%= statusCounts.done %></span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">In progress</span>
+            <span class="stat-pill status-in-progress"><%= statusCounts['in-progress'] %></span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Blocked</span>
+            <span class="stat-pill status-blocked"><%= statusCounts.blocked %></span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Most productive week</span>
+            <span class="stat-value"><%= mostProductiveWeekLabel %></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Task History</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="tasks-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Task</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (tasks.length) { %>
+                <% tasks.forEach(function(task) { %>
+                  <tr>
+                    <td><%= task.dateFormatted %></td>
+                    <td><%= task.task %></td>
+                    <td>
+                      <span class="status-pill <%= 'status-' + task.status %>">
+                        <%= task.status.replace('-', ' ') %>
+                      </span>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="3" class="empty-state">No tasks logged yet.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="member-charts">
+      <div class="card">
+        <div class="card-header">
+          <h3>Daily tasks (last 14 days)</h3>
+        </div>
+        <div class="card-body">
+          <canvas id="dailyTasksChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Monthly done tasks</h3>
+        </div>
+        <div class="card-body">
+          <canvas id="monthlyDoneChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      var dailyData = <%- JSON.stringify(dailyChart || { labels: [], data: [] }) %>;
+      var monthlyData = <%- JSON.stringify(monthlyChart || { labels: [], data: [] }) %>;
+
+      var dailyCtx = document.getElementById('dailyTasksChart');
+      if (dailyCtx && dailyData.labels.length) {
+        new Chart(dailyCtx, {
+          type: 'bar',
+          data: {
+            labels: dailyData.labels,
+            datasets: [{
+              label: 'Tasks',
+              data: dailyData.data,
+              backgroundColor: 'rgba(68, 114, 196, 0.7)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                ticks: { maxRotation: 90, minRotation: 45 }
+              },
+              y: {
+                beginAtZero: true,
+                precision: 0
+              }
+            }
+          }
+        });
+      }
+
+      var monthlyCtx = document.getElementById('monthlyDoneChart');
+      if (monthlyCtx && monthlyData.labels.length) {
+        new Chart(monthlyCtx, {
+          type: 'line',
+          data: {
+            labels: monthlyData.labels,
+            datasets: [{
+              label: 'Done tasks',
+              data: monthlyData.data,
+              borderColor: 'rgba(112, 173, 71, 1)',
+              backgroundColor: 'rgba(112, 173, 71, 0.2)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                precision: 0
+              }
+            }
+          }
+        });
+      }
+    })();
+  </script>
+
+  <script src="/script.js"></script>
+      </section>
+    </div>
+  </body>
+</html>
+

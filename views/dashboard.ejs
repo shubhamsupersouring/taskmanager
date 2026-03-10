@@ -1,0 +1,96 @@
+<%- include('partials/header') %>
+
+  <section class="dashboard-grid">
+    <div class="dashboard-main">
+      <div class="card">
+        <div class="card-header">
+          <h2>Team Today</h2>
+          <a href="/summary/team" class="btn btn-primary btn-sm">Weekly AI Summary</a>
+        </div>
+        <div class="member-grid">
+          <% if (memberCards && memberCards.length) { %>
+            <% memberCards.forEach(function(member) { %>
+              <div class="member-card">
+                <div class="member-card-header">
+                  <h3><%= member.name %></h3>
+                  <span class="status-badge <%= member.todayCount > 0 ? 'status-active' : 'status-no-update' %>">
+                    <%= member.statusLabel %>
+                  </span>
+                </div>
+                <div class="member-card-body">
+                  <p class="member-task-count">
+                    <strong><%= member.todayCount %></strong> task<%= member.todayCount === 1 ? '' : 's' %> today
+                  </p>
+                  <div class="member-card-actions">
+                    <a href="/members/<%= member.id %>" class="btn-link">View details</a>
+                    <a
+                      href="/tasks?member_id=<%= member.id %>&date=<%= new Date().toISOString().slice(0,10) %>"
+                      class="btn btn-outline btn-sm"
+                    >
+                      Add Task
+                    </a>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p class="empty-state">No members found.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-sidebar">
+      <div class="card">
+        <div class="card-header">
+          <h2>This Week</h2>
+        </div>
+        <div class="calendar-strip">
+          <% if (weekDays && weekDays.length) { %>
+            <% weekDays.forEach(function(day) { %>
+              <div class="calendar-day <%= day.isToday ? 'today' : '' %> <%= day.isWeekend ? 'weekend' : '' %>">
+                <span class="weekday"><%= day.label %></span>
+                <span class="date-label"><%= day.dateLabel %></span>
+                <% if (day.isWeekend) { %>
+                  <span class="holiday-label">Holiday</span>
+                <% } %>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p class="empty-state">No calendar data.</p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Weekly Stats</h2>
+        </div>
+        <div class="weekly-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total tasks</span>
+            <span class="stat-value"><%= (weeklyStats && weeklyStats.total) || 0 %></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">In progress</span>
+            <span class="stat-pill status-in-progress"><%= (weeklyStats && weeklyStats.in_progress) || 0 %></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Done</span>
+            <span class="stat-pill status-done"><%= (weeklyStats && weeklyStats.done) || 0 %></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Blocked</span>
+            <span class="stat-pill status-blocked"><%= (weeklyStats && weeklyStats.blocked) || 0 %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<script src="/script.js"></script>
+      </section>
+    </div>
+  </body>
+</html>
+
