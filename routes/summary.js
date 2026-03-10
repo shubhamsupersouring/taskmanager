@@ -65,7 +65,7 @@ Do NOT include <html> or <body> tags. Use short, direct bullets and bold key phr
   return header + list + custom + footer;
 }
 
-function buildTeamPrompt(tasks, customText) {
+function buildTeamPrompt(tasks, customText, noUpdateMembers) {
   const header = `You are a project manager assistant. Based on the following work log for the whole team, write a concise professional report of contributions, patterns, productivity, and any concerns.
 
 Work log:
@@ -81,6 +81,13 @@ Work log:
   const custom = customText
     ? `\n\nAdditional instructions from the manager:\n${customText}\n`
     : '';
+
+  const noUpdateSection =
+    noUpdateMembers && noUpdateMembers.length
+      ? `\n\nMembers with NO updates for this week:\n${noUpdateMembers.join(
+          ', '
+        )}\n`
+      : '';
 
   const footer = `
 
@@ -104,7 +111,7 @@ Provide the report as clean HTML with the following structure:
 Do NOT include <html> or <body> tags. Use short, direct bullets and bold key phrases where helpful.
 `;
 
-  return header + list + custom + footer;
+  return header + list + noUpdateSection + custom + footer;
 }
 
 async function getModel() {
@@ -260,9 +267,14 @@ router.get('/team', async (req, res) => {
       });
     }
 
+    const allMembers = await db('members').select('id', 'name').orderBy('name');
+    const membersWithTasks = new Set(tasks.map((t) => t.member_id));
+    const noUpdateMembers = allMembers.filter((m) => !membersWithTasks.has(m.id));
+    const noUpdateNames = noUpdateMembers.map((m) => m.name);
+
     const model = await getModel();
     const custom = (req.query.custom || '').trim();
-    const prompt = buildTeamPrompt(tasks, custom);
+    const prompt = buildTeamPrompt(tasks, custom, noUpdateNames);
 
     let aiText = '';
     try {
@@ -294,7 +306,8 @@ router.get('/team', async (req, res) => {
       summaryText: aiText,
       errorMessage: '',
       dateRangeLabel,
-      backUrl: '/'
+      backUrl: '/',
+      noUpdateMembers: noUpdateNames
     });
   } catch (err) {
     console.error(err);

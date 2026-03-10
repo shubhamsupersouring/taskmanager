@@ -57,6 +57,9 @@ async function handleForgotPassword(req, res) {
       return res.redirect('/forgot-password');
     }
 
+    // Log for debugging to confirm route is hit
+    console.log('[ForgotPassword] Request received for email:', email);
+
     await createPasswordReset(email);
 
     req.flash(

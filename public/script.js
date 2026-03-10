@@ -7,6 +7,148 @@ function ready(fn) {
 }
 
 ready(function () {
+  var loader = document.getElementById('globalLoader');
+  var toastContainer = document.getElementById('toastContainer');
+
+  function showLoader() {
+    if (loader) loader.style.display = 'flex';
+  }
+
+  function hideLoader() {
+    if (loader) loader.style.display = 'none';
+  }
+
+  function showToast(message, type) {
+    if (!toastContainer || !message) return;
+    var el = document.createElement('div');
+    el.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');
+    el.innerHTML =
+      '<span class="toast-dot"></span>' +
+      '<div class="toast-message">' + message + '</div>';
+    toastContainer.appendChild(el);
+    setTimeout(function () {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    }, 3500);
+  }
+
+  // Expose helpers globally so inline scripts can reuse them
+  window.showLoader = showLoader;
+  window.hideLoader = hideLoader;
+  window.showToast = showToast;
+
+  // Theme toggle (light / dark)
+  var THEME_KEY = 'worktrack_theme';
+  var root = document.documentElement;
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.removeAttribute('data-theme');
+    }
+    localStorage.setItem(THEME_KEY, theme);
+  }
+
+  var savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(savedTheme);
+
+  document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      var next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    });
+  });
+
+  // Generic confirm modal for deletes (tasks page)
+  var confirmModal = document.getElementById('confirmDeleteModal');
+  var confirmText = document.getElementById('confirmDeleteText');
+  var confirmCancelBackdrop = document.getElementById('confirmDeleteCancel');
+  var confirmCancelBtn = document.getElementById('confirmDeleteCancelBtn');
+  var confirmYesBtn = document.getElementById('confirmDeleteConfirmBtn');
+  var pendingConfirm = null;
+
+  function closeConfirm() {
+    if (confirmModal) {
+      confirmModal.classList.remove('open');
+    }
+    pendingConfirm = null;
+  }
+
+  function openConfirm(message, onConfirm) {
+    if (!confirmModal || !confirmText || !confirmYesBtn) {
+      // Fallback to native confirm if modal markup not present
+      if (window.confirm(message) && typeof onConfirm === 'function') {
+        onConfirm();
+      }
+      return;
+    }
+    confirmText.textContent = message || 'Are you sure?';
+    pendingConfirm = typeof onConfirm === 'function' ? onConfirm : null;
+    confirmModal.classList.add('open');
+  }
+
+  if (confirmCancelBackdrop) {
+    confirmCancelBackdrop.addEventListener('click', closeConfirm);
+  }
+  if (confirmCancelBtn) {
+    confirmCancelBtn.addEventListener('click', closeConfirm);
+  }
+  if (confirmYesBtn) {
+    confirmYesBtn.addEventListener('click', function () {
+      var fn = pendingConfirm;
+      closeConfirm();
+      if (typeof fn === 'function') {
+        fn();
+      }
+    });
+  }
+
+  // Expose confirm helper globally so inline scripts (members, projects) can use it
+  window.openConfirm = openConfirm;
+
+  // Password visibility toggles (login / reset screens)
+  document.querySelectorAll('.password-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId = btn.getAttribute('data-target');
+      if (!targetId) return;
+      var input = document.getElementById(targetId);
+      if (!input) return;
+      var isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    });
+  });
+
+  // Show loader on all normal form submits (full-page requests)
+  document.querySelectorAll('form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      if (window.showLoader) {
+        window.showLoader();
+      }
+    });
+  });
+
+  // Show loader on internal navigation (sidebar tabs, in-app links)
+  document.querySelectorAll('a[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (!href) return;
+    // Ignore anchors and JS links
+    if (href.startsWith('#') || href.startsWith('javascript:')) return;
+
+    link.addEventListener('click', function (e) {
+      // Only left-click without modifier keys
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      if (window.showLoader) {
+        window.showLoader();
+      }
+    });
+  });
+
   var sidebarToggle = document.getElementById('sidebarToggle');
   var sidebar = document.querySelector('.sidebar');
   if (sidebarToggle && sidebar) {
@@ -67,10 +209,13 @@ ready(function () {
   }
 
   document.querySelectorAll('.status-toggle').forEach(function (btn) {
+    if (btn._boundStatusToggle) return;
+    btn._boundStatusToggle = true;
     btn.addEventListener('click', function () {
       var taskId = this.getAttribute('data-task-id');
       if (!taskId) return;
 
+      showLoader();
       fetch('/tasks/' + taskId + '/status', {
         method: 'POST',
         headers: {
@@ -88,36 +233,47 @@ ready(function () {
           btn.classList.remove('status-in-progress', 'status-done', 'status-blocked');
           btn.classList.add('status-' + newStatus);
           btn.textContent = newStatus.replace('-', ' ');
+          showToast('Status updated.', 'success');
         })
         .catch(function () {
-          alert('Could not update task status. Please try again.');
+          showToast('Could not update task status. Please try again.', 'error');
+        })
+        .finally(function () {
+          hideLoader();
         });
     });
   });
 
   document.querySelectorAll('.delete-task').forEach(function (btn) {
+    if (btn._boundDelete) return;
+    btn._boundDelete = true;
     btn.addEventListener('click', function () {
       var taskId = this.getAttribute('data-task-id');
       if (!taskId) return;
-      if (!confirm('Delete this task?')) return;
-
-      fetch('/tasks/' + taskId, {
-        method: 'DELETE'
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error('Failed to delete task');
-          return res.json();
+      openConfirm('Delete this task?', function () {
+        showLoader();
+        fetch('/tasks/' + taskId, {
+          method: 'DELETE'
         })
-        .then(function (data) {
-          if (!data.success) return;
-          var row = document.querySelector('tr[data-task-id="' + taskId + '"]');
-          if (row && row.parentNode) {
-            row.parentNode.removeChild(row);
-          }
-        })
-        .catch(function () {
-          alert('Could not delete task. Please try again.');
-        });
+          .then(function (res) {
+            if (!res.ok) throw new Error('Failed to delete task');
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data.success) return;
+            var row = document.querySelector('tr[data-task-id="' + taskId + '"]');
+            if (row && row.parentNode) {
+              row.parentNode.removeChild(row);
+            }
+            showToast('Task deleted.', 'success');
+          })
+          .catch(function () {
+            showToast('Could not delete task. Please try again.', 'error');
+          })
+          .finally(function () {
+            hideLoader();
+          });
+      });
     });
   });
 
@@ -188,6 +344,7 @@ ready(function () {
           var taskId = this.getAttribute('data-task-id');
           if (!taskId) return;
 
+          showLoader();
           fetch('/tasks/' + taskId + '/status', {
             method: 'POST',
             headers: {
@@ -205,9 +362,13 @@ ready(function () {
               btn.classList.remove('status-in-progress', 'status-done', 'status-blocked');
               btn.classList.add('status-' + newStatus);
               btn.textContent = newStatus.replace('-', ' ');
+              showToast('Status updated.', 'success');
             })
             .catch(function () {
-              alert('Could not update task status. Please try again.');
+              showToast('Could not update task status. Please try again.', 'error');
+            })
+            .finally(function () {
+              hideLoader();
             });
         });
       });
@@ -218,29 +379,34 @@ ready(function () {
         btn.addEventListener('click', function () {
           var taskId = this.getAttribute('data-task-id');
           if (!taskId) return;
-          if (!confirm('Delete this task?')) return;
-
-          fetch('/tasks/' + taskId, {
-            method: 'DELETE'
-          })
-            .then(function (res) {
-              if (!res.ok) throw new Error('Failed to delete task');
-              return res.json();
+          openConfirm('Delete this task?', function () {
+            showLoader();
+            fetch('/tasks/' + taskId, {
+              method: 'DELETE'
             })
-            .then(function (data) {
-              if (!data.success) return;
-              var row = document.querySelector('tr[data-task-id="' + taskId + '"]');
-              if (row && row.parentNode) {
-                row.parentNode.removeChild(row);
-              }
-              var card = document.querySelector('.task-card[data-task-id="' + taskId + '"]');
-              if (card && card.parentNode) {
-                card.parentNode.removeChild(card);
-              }
-            })
-            .catch(function () {
-              alert('Could not delete task. Please try again.');
-            });
+              .then(function (res) {
+                if (!res.ok) throw new Error('Failed to delete task');
+                return res.json();
+              })
+              .then(function (data) {
+                if (!data.success) return;
+                var row = document.querySelector('tr[data-task-id="' + taskId + '"]');
+                if (row && row.parentNode) {
+                  row.parentNode.removeChild(row);
+                }
+                var card = document.querySelector('.task-card[data-task-id="' + taskId + '"]');
+                if (card && card.parentNode) {
+                  card.parentNode.removeChild(card);
+                }
+                showToast('Task deleted.', 'success');
+              })
+              .catch(function () {
+                showToast('Could not delete task. Please try again.', 'error');
+              })
+              .finally(function () {
+                hideLoader();
+              });
+          });
         });
       });
     }
@@ -255,6 +421,7 @@ ready(function () {
       var qs = baseQuery ? baseQuery + '&' : '';
       qs += 'page=' + (page + 1);
 
+      showLoader();
       fetch('/tasks/page?' + qs)
         .then(function (res) {
           if (!res.ok) throw new Error('Failed to load more tasks');
@@ -280,6 +447,7 @@ ready(function () {
         })
         .finally(function () {
           loading = false;
+          hideLoader();
         });
     }
 

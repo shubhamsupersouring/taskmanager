@@ -38,6 +38,15 @@
           <% } %>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Today by member</h2>
+        </div>
+        <div class="card-body" style="height: 260px;">
+          <canvas id="todayByMemberChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <div class="dashboard-sidebar">
@@ -59,6 +68,15 @@
           <% } else { %>
             <p class="empty-state">No calendar data.</p>
           <% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Weekly Status Mix</h2>
+        </div>
+        <div class="card-body" style="height: 220px;">
+          <canvas id="weeklyStatusChart"></canvas>
         </div>
       </div>
 
@@ -88,7 +106,80 @@
     </div>
   </section>
 
-<script src="/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      var charts = <%- JSON.stringify(charts || {}) %>;
+
+      var statusCfg = charts.weeklyStatus || { labels: [], data: [] };
+      var todayCfg = charts.todayByMember || { labels: [], data: [] };
+
+      var weeklyCtx = document.getElementById('weeklyStatusChart');
+      if (weeklyCtx && statusCfg.labels.length) {
+        new Chart(weeklyCtx, {
+          type: 'doughnut',
+          data: {
+            labels: statusCfg.labels,
+            datasets: [{
+              data: statusCfg.data,
+              backgroundColor: [
+                'rgba(255, 192, 0, 0.8)',
+                'rgba(112, 173, 71, 0.9)',
+                'rgba(255, 0, 0, 0.7)'
+              ],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { boxWidth: 12, boxHeight: 12 }
+              }
+            }
+          }
+        });
+      }
+
+      var todayCtx = document.getElementById('todayByMemberChart');
+      if (todayCtx && todayCfg.labels.length) {
+        new Chart(todayCtx, {
+          type: 'bar',
+          data: {
+            labels: todayCfg.labels,
+            datasets: [{
+              label: 'Tasks today',
+              data: todayCfg.data,
+              backgroundColor: 'rgba(68, 114, 196, 0.8)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  maxRotation: 60,
+                  minRotation: 30
+                }
+              },
+              y: {
+                beginAtZero: true,
+                precision: 0
+              }
+            }
+          }
+        });
+      }
+    })();
+  </script>
+
+  <script src="/script.js"></script>
       </section>
     </div>
   </body>

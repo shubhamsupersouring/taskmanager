@@ -101,7 +101,11 @@ app.use((req, res) => {
     memberCards: [],
     weeklyStats: { total: 0, in_progress: 0, done: 0, blocked: 0 },
     weekDays: [],
-    weekRangeLabel: ''
+    weekRangeLabel: '',
+    charts: {
+      weeklyStatus: { labels: [], data: [] },
+      todayByMember: { labels: [], data: [] }
+    }
   });
 });
 

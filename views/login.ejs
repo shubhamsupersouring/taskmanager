@@ -3,14 +3,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= pageTitle ? pageTitle + ' | WorkTrack' : 'WorkTrack' %></title>
+    <title><%= pageTitle ? pageTitle + ' | TrackerBabu' : 'TrackerBabu' %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body class="login-body">
+    <button
+      type="button"
+      class="theme-toggle"
+      data-theme-toggle
+      style="position:absolute;top:12px;right:14px;"
+    >
+      <span class="theme-toggle-track">
+        <i class="fa-regular fa-sun theme-icon theme-icon-sun"></i>
+        <i class="fa-regular fa-moon theme-icon theme-icon-moon"></i>
+        <span class="theme-toggle-thumb"></span>
+      </span>
+    </button>
+    <div id="toastContainer" class="toast-container"></div>
+    <div id="globalLoader" class="loader-backdrop" style="display: none;">
+      <div class="loader-spinner"></div>
+    </div>
     <div class="login-wrapper">
+      <div class="login-left">
+        <div class="login-badge">
+          <span>TrackerBabu</span>
+        </div>
+        <h1 class="login-headline">Daily work tracking for modern teams.</h1>
+        <p class="login-copy">
+          Capture what everyone shipped today, understand progress at a glance,
+          and generate AI summaries for faster standups and status reports.
+        </p>
+        <ul class="login-bullets">
+          <li>Task updates by member, project and status.</li>
+          <li>Smart dashboards with weekly and monthly trends.</li>
+          <li>AI-powered summaries for managers and stakeholders.</li>
+        </ul>
+      </div>
       <div class="login-card">
-        <h1 class="login-title">WorkTrack</h1>
-        <p class="login-subtitle">Sign in to your portal</p>
+        <div class="login-mobile-hero">
+          <div class="login-badge">
+            <span>TrackerBabu</span>
+          </div>
+          <h2 class="login-mobile-headline">Daily work tracking for modern teams.</h2>
+        </div>
+        <h1 class="login-title">Sign in</h1>
+        <p class="login-subtitle">Access your TrackerBabu portal</p>
 
         <% if ((successMessages && successMessages.length) || (errorMessages && errorMessages.length)) { %>
           <div class="flash-container">
@@ -37,13 +87,23 @@
 
           <div class="form-group">
             <label for="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autocomplete="current-password"
-            />
+            <div class="password-field">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                aria-label="Show password"
+                data-target="password"
+              >
+                👁
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary login-submit">
@@ -64,6 +124,7 @@
         </div>
       </div>
     </div>
+    <script src="/script.js"></script>
   </body>
 </html>
 

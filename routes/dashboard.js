@@ -104,7 +104,22 @@ router.get('/', async (req, res) => {
       weekRangeLabel:
         weekDays.length > 0
           ? `${weekDays[0].dateLabel} - ${weekDays[6].dateLabel}`
-          : ''
+          : '',
+      // For charts
+      charts: {
+        weeklyStatus: {
+          labels: ['In progress', 'Done', 'Blocked'],
+          data: [
+            weeklyStatsRow.in_progress,
+            weeklyStatsRow.done,
+            weeklyStatsRow.blocked
+          ]
+        },
+        todayByMember: {
+          labels: memberCards.map((m) => m.name),
+          data: memberCards.map((m) => m.todayCount)
+        }
+      }
     });
   } catch (err) {
     console.error(err);
@@ -115,7 +130,11 @@ router.get('/', async (req, res) => {
       memberCards: [],
       weeklyStats: { total: 0, in_progress: 0, done: 0, blocked: 0 },
       weekDays: [],
-      weekRangeLabel: ''
+      weekRangeLabel: '',
+      charts: {
+        weeklyStatus: { labels: [], data: [] },
+        todayByMember: { labels: [], data: [] }
+      }
     });
   }
 });

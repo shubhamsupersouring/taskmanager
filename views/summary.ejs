@@ -12,6 +12,13 @@
           Date range: <strong><%= dateRangeLabel %></strong>
         </p>
 
+        <% if (type === 'team' && noUpdateMembers && noUpdateMembers.length) { %>
+          <p class="text-muted">
+            Members with <strong>no task updates</strong> this week:
+            <strong><%= noUpdateMembers.join(', ') %></strong>
+          </p>
+        <% } %>
+
         <form method="get" action="<%= type === 'team' ? '/summary/team' : ('/summary/member/' + encodeURIComponent(targetName && targetName.id ? targetName.id : '')) %>" class="filters-form" style="margin-bottom: 0.75rem;">
           <% if (typeof memberId !== 'undefined' && type === 'member') { %>
             <input type="hidden" name="id" value="<%= memberId %>" />

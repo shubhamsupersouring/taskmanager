@@ -1,10 +1,17 @@
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="logo-circle">W</div>
+    <div class="logo-circle">TB</div>
     <div class="logo-text">
-      <span class="logo-title">WorkTrack</span>
+      <span class="logo-title">TrackerBabu</span>
       <span class="logo-subtitle">Team Work Portal</span>
     </div>
+    <button type="button" class="theme-toggle" data-theme-toggle>
+      <span class="theme-toggle-track">
+        <i class="fa-regular fa-sun theme-icon theme-icon-sun"></i>
+        <i class="fa-regular fa-moon theme-icon theme-icon-moon"></i>
+        <span class="theme-toggle-thumb"></span>
+      </span>
+    </button>
   </div>
 
   <nav class="sidebar-nav">
@@ -15,6 +22,9 @@
       Tasks
     </a>
     <% if (currentUser && currentUser.role === 'superadmin') { %>
+      <a href="/members" class="nav-link <%= currentPath.startsWith('/members') ? 'active' : '' %>">
+        Members
+      </a>
       <a href="/projects" class="nav-link <%= currentPath.startsWith('/projects') ? 'active' : '' %>">
         Projects
       </a>
@@ -23,22 +33,6 @@
       </a>
     <% } %>
   </nav>
-
-  <% if (currentUser && currentUser.role === 'superadmin') { %>
-    <div class="sidebar-section">
-      <div class="sidebar-section-header">
-        <span>Members</span>
-      </div>
-      <div class="member-list">
-        <% (sidebarMembers || []).forEach(function(member) { %>
-          <a href="/members/<%= member.id %>" class="member-link">
-            <span class="member-initial"><%= member.name.charAt(0).toUpperCase() %></span>
-            <span class="member-name"><%= member.name %></span>
-          </a>
-        <% }) %>
-      </div>
-    </div>
-  <% } %>
 
   <div class="sidebar-footer">
     <% if (currentUser) { %>

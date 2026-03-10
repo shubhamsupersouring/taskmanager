@@ -26,6 +26,12 @@ exports.seed = async function (knex) {
       member_id: null
     },
     {
+      email: 'shubham.tiwari@supersourcing.com',
+      password_hash: passwordHashMember,
+      role: 'member',
+      member_id: null
+    },
+    {
       email: 'deepak.r@supersourcing.com',
       password_hash: passwordHashMember,
       role: 'member',
