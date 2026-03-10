@@ -119,12 +119,28 @@ ready(function () {
       var isPassword = input.type === 'password';
       input.type = isPassword ? 'text' : 'password';
       btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+
+      // Toggle eye / eye-slash icon if present
+      var icon = btn.querySelector('i');
+      if (icon) {
+        if (isPassword) {
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        } else {
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
     });
   });
 
   // Show loader on all normal form submits (full-page requests)
   document.querySelectorAll('form').forEach(function (form) {
     form.addEventListener('submit', function () {
+      // Skip forms that explicitly opt out (e.g. export downloads)
+      if (form.hasAttribute('data-no-loader')) {
+        return;
+      }
       if (window.showLoader) {
         window.showLoader();
       }

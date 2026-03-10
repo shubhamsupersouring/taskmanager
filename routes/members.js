@@ -1,5 +1,7 @@
 const express = require('express');
 const db = require('../database');
+const ExcelJS = require('exceljs');
+const { createMemberUserWithEmail } = require('../services/authService');
 
 const router = express.Router();
 
@@ -57,22 +59,43 @@ router.post('/add', async (req, res) => {
   }
 
   try {
-    const { id, name, role } = req.body;
-    if (!name) {
-      req.flash('error', 'Member name is required.');
+    const { id, name, role, email } = req.body;
+    const trimmedName = (name || '').trim();
+    const trimmedRole = (role || '').trim();
+    const trimmedEmail = (email || '').trim();
+
+    if (!trimmedName || !trimmedRole || (!id && !trimmedEmail)) {
+      req.flash(
+        'error',
+        'Name, role, and email are required when adding a member.'
+      );
       return res.redirect('/members');
     }
 
     const payload = {
-      name: name.trim(),
-      role: (role && role.trim()) || 'Developer'
+      name: trimmedName,
+      role: trimmedRole || 'Developer'
     };
 
     if (id) {
       await db('members').where({ id }).update(payload);
       req.flash('success', 'Member updated.');
     } else {
-      await db('members').insert(payload);
+      const inserted = await db('members').insert(payload).returning(['id']);
+      const createdMember = Array.isArray(inserted) ? inserted[0] : inserted;
+
+      if (trimmedEmail) {
+        try {
+          await createMemberUserWithEmail(
+            createdMember.id,
+            payload.name,
+            trimmedEmail
+          );
+        } catch (err) {
+          console.error('Failed to create user / send welcome email for member', err);
+        }
+      }
+
       req.flash('success', 'Member added.');
     }
 
@@ -93,13 +116,139 @@ router.post('/:id/delete', async (req, res) => {
 
   try {
     const { id } = req.params;
-    await db('members').where({ id }).del();
+    // Remove all tasks and linked user for this member first, then the member record
+    await db.transaction(async (trx) => {
+      await trx('tasks').where({ member_id: id }).del();
+      await trx('users').where({ member_id: id }).del();
+      await trx('members').where({ id }).del();
+    });
     req.flash('success', 'Member deleted.');
   } catch (err) {
     console.error(err);
     req.flash('error', 'Failed to delete member.');
   }
   res.redirect('/members');
+});
+
+// Export member's done work as Excel within a date range
+router.get('/:id/export', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const isSuperAdmin =
+      req.session.user && req.session.user.role === 'superadmin';
+
+    // Allow superadmin or the member themselves
+    if (!isSuperAdmin) {
+      if (!req.session.user || String(req.session.user.member_id) !== String(id)) {
+        req.flash('error', 'You are not allowed to export this member work.');
+        return res.redirect('/');
+      }
+    }
+
+    const start = req.query.start;
+    const end = req.query.end;
+
+    if (!start || !end) {
+      req.flash('error', 'Please select both start and end date to export work.');
+      return res.redirect(`/members/${id}`);
+    }
+
+    const member = await db('members').where({ id }).first();
+    if (!member) {
+      req.flash('error', 'Member not found.');
+      return res.redirect('/');
+    }
+
+    const tasks = await db('tasks as t')
+      .leftJoin('projects as p', 't.project_id', 'p.id')
+      .select(
+        't.date',
+        't.task',
+        'p.name as project_name'
+      )
+      .where('t.member_id', id)
+      .andWhere('t.status', 'done')
+      .andWhereBetween('t.date', [start, end])
+      .orderBy([{ column: 't.date', order: 'asc' }, { column: 't.created_at', order: 'asc' }]);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Work Export');
+
+    // Title row
+    const title = `${member.name} (${formatDate(start)} - ${formatDate(end)})`;
+    sheet.mergeCells('A1:B1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = title;
+    titleCell.font = { bold: true, size: 14 };
+    titleCell.alignment = { horizontal: 'center' };
+
+    // Header row
+    const headerRow = sheet.getRow(3);
+    headerRow.values = ['Date', title];
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.alignment = { horizontal: 'center' };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0FA36C' }
+    };
+
+    sheet.columns = [
+      { header: 'Date', key: 'date', width: 18 },
+      { header: title, key: 'work', width: 80 }
+    ];
+
+    // Group done tasks by date
+    const byDate = {};
+    for (const t of tasks) {
+      const key = t.date;
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push(t);
+    }
+
+    let currentRowIndex = 4;
+    const dateKeys = Object.keys(byDate).sort();
+    for (const dateKey of dateKeys) {
+      const items = byDate[dateKey];
+      const displayDate = formatDate(dateKey);
+
+      const workText = items
+        .map((item, idx) => {
+          const proj = item.project_name ? ` (${item.project_name})` : '';
+          return `${idx + 1}. ${item.task}${proj}`;
+        })
+        .join('  ');
+
+      const row = sheet.getRow(currentRowIndex++);
+      row.values = [displayDate, workText];
+      row.alignment = { vertical: 'top', wrapText: true };
+      row.border = {
+        top: { style: 'thin', color: { argb: 'FFB4E0C8' } },
+        left: { style: 'thin', color: { argb: 'FFB4E0C8' } },
+        bottom: { style: 'thin', color: { argb: 'FFB4E0C8' } },
+        right: { style: 'thin', color: { argb: 'FFB4E0C8' } }
+      };
+    }
+
+    const safeName = member.name.replace(/[^a-z0-9]+/gi, '_');
+    const filename = `${safeName}_${start}_to_${end}.xlsx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${filename}"`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error(err);
+    req.flash('error', 'Failed to export work.');
+    res.redirect('back');
+  }
 });
 
 router.get('/:id', async (req, res) => {

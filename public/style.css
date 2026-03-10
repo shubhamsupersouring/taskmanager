@@ -545,9 +545,8 @@ html[data-theme='dark'] .sidebar-toggle {
 }
 
 .member-task-cards {
-  display: none;
+  display: flex;
   margin-top: 0.5rem;
-  display: none;
   flex-direction: column;
   gap: 0.75rem;
 }
@@ -615,6 +614,11 @@ textarea {
 
 .table-wrapper {
   overflow-x: auto;
+}
+
+/* Member detail: always use card view for history, hide table */
+.member-detail-layout #memberHistoryTable {
+  display: none;
 }
 
 table {
@@ -810,7 +814,7 @@ tbody tr:hover {
 .toast {
   min-width: 260px;
   max-width: 420px;
-  background: linear-gradient(135deg, #ffffff, #f3f6ff);
+  background: linear-gradient(135deg, var(--white), #f3f6ff);
   border-radius: 999px;
   padding: 0.45rem 0.9rem;
   box-shadow: 0 10px 30px rgba(31, 56, 100, 0.18);
@@ -825,13 +829,30 @@ tbody tr:hover {
 }
 
 .toast.toast-success {
-  border-color: rgba(112, 173, 71, 0.7);
-  background: linear-gradient(135deg, #f4fbf0, #e1f3da);
+  border-color: rgba(15, 163, 108, 0.5);
+  background: linear-gradient(135deg, #ddf8eb, #bdeed5);
 }
 
 .toast.toast-error {
   border-color: rgba(255, 0, 0, 0.6);
   background: linear-gradient(135deg, #fdf3f3, #fbe3e3);
+}
+
+/* Dark mode toast styling */
+html[data-theme='dark'] .toast {
+  background: linear-gradient(135deg, #020617, #020b1b);
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+html[data-theme='dark'] .toast.toast-success {
+  border-color: rgba(34, 197, 94, 0.7);
+  background: linear-gradient(135deg, #022c22, #064e3b);
+}
+
+html[data-theme='dark'] .toast.toast-error {
+  border-color: rgba(239, 68, 68, 0.8);
+  background: linear-gradient(135deg, #450a0a, #7f1d1d);
 }
 
 .toast-dot {

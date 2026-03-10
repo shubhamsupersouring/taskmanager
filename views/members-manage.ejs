@@ -17,6 +17,7 @@
               data-member-id="<%= member.id %>"
               data-member-name="<%= member.name %>"
               data-member-role="<%= member.role %>"
+              data-member-email="<%= member.user_email || '' %>"
             >
               <div class="member-manage-card-header">
                 <div class="member-manage-card-title"><%= member.name %></div>
@@ -75,7 +76,15 @@
 
         <div class="form-group">
           <label for="memberRole">Role</label>
-          <input id="memberRole" name="role" type="text" placeholder="e.g. Developer, Manager" />
+          <input id="memberRole" name="role" type="text" placeholder="e.g. Developer, Manager" required />
+        </div>
+
+        <div class="form-group">
+          <label for="memberEmail">Login email</label>
+          <input id="memberEmail" name="email" type="email" placeholder="user@example.com" required />
+          <span class="text-muted" style="font-size: 0.75rem;">
+            Used to send TrackerBabu login credentials when creating a new member.
+          </span>
         </div>
 
         <div class="modal-footer">
@@ -100,6 +109,7 @@
       var memberId = document.getElementById('memberId');
       var memberName = document.getElementById('memberName');
       var memberRole = document.getElementById('memberRole');
+      var memberEmail = document.getElementById('memberEmail');
       var modalTitle = document.getElementById('memberModalTitle');
       var submitBtn = document.getElementById('memberSubmitBtn');
 
@@ -112,12 +122,20 @@
           if (memberId) memberId.value = member.id || '';
           if (memberName) memberName.value = member.name || '';
           if (memberRole) memberRole.value = member.role || '';
+          if (memberEmail) {
+            memberEmail.value = member.email || '';
+            memberEmail.disabled = true;
+          }
         } else {
           if (modalTitle) modalTitle.textContent = 'Add member';
           if (submitBtn) submitBtn.textContent = 'Save member';
           if (memberId) memberId.value = '';
           if (memberName) memberName.value = '';
           if (memberRole) memberRole.value = '';
+          if (memberEmail) {
+            memberEmail.value = '';
+            memberEmail.disabled = false;
+          }
         }
 
         modal.classList.add('open');
@@ -145,7 +163,8 @@
           var id = card.getAttribute('data-member-id');
           var name = card.getAttribute('data-member-name') || '';
           var role = card.getAttribute('data-member-role') || '';
-          openModal({ id: id, name: name, role: role });
+          var email = card.getAttribute('data-member-email') || '';
+          openModal({ id: id, name: name, role: role, email: email });
         });
       });
 

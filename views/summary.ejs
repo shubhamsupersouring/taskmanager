@@ -12,7 +12,7 @@
           Date range: <strong><%= dateRangeLabel %></strong>
         </p>
 
-        <% if (type === 'team' && noUpdateMembers && noUpdateMembers.length) { %>
+        <% if (type === 'team' && typeof noUpdateMembers !== 'undefined' && noUpdateMembers && noUpdateMembers.length) { %>
           <p class="text-muted">
             Members with <strong>no task updates</strong> this week:
             <strong><%= noUpdateMembers.join(', ') %></strong>
