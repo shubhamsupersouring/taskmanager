@@ -298,8 +298,9 @@ html[data-theme='dark'] .theme-icon-moon {
 .sidebar-toggle {
   display: none;
   position: absolute;
-  top: 0.75rem;
+  top: 50%;
   right: 0.75rem;
+  transform: translateY(-50%);
   border: none;
   background: transparent;
   font-size: 1.25rem;
@@ -475,6 +476,19 @@ html[data-theme='dark'] .sidebar-toggle {
   display: block;
   font-size: 0.7rem;
   margin-top: 0.1rem;
+}
+
+/* Mobile: keep holiday label inside pill */
+@media (max-width: 600px) {
+  .calendar-day {
+    padding: 0.3rem 0.35rem;
+  }
+
+  .holiday-label {
+    font-size: 0.6rem;
+    line-height: 1.1;
+    word-break: break-word;
+  }
 }
 
 .weekly-stats {
@@ -971,6 +985,25 @@ tbody tr:hover {
   margin-bottom: 0.15rem;
 }
 
+/* Dark mode styling for AI summary content */
+html[data-theme='dark'] .summary-card {
+  background: linear-gradient(135deg, #020617, #020b1b);
+  border-color: #1f2937;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+}
+
+html[data-theme='dark'] .summary-card .summary-content {
+  color: #e5e7eb;
+}
+
+html[data-theme='dark'] .summary-card .summary-content h3 {
+  color: #22c55e;
+}
+
+html[data-theme='dark'] .summary-card .summary-content ul {
+  color: #d1d5db;
+}
+
 .text-muted {
   color: var(--text-muted);
 }
@@ -1359,6 +1392,7 @@ html[data-theme='dark'] .task-meta-value {
   /* Mobile: keep brand (TB + Tracker Babu) on the left, controls on right */
   .sidebar-header {
     position: relative;
+    align-items: center;
     justify-content: flex-start;
   }
 
@@ -1370,12 +1404,14 @@ html[data-theme='dark'] .task-meta-value {
 
   .sidebar .theme-toggle {
     position: absolute;
-    top: 0.55rem;
+    top: 0.75rem;
     right: 2.75rem; /* toggle just left of burger */
+    transform: none;
   }
 
   .sidebar-toggle {
-    top: 0.55rem;
+    top: 0.75rem;
+    transform: none;
     right: 0.75rem; /* burger at far right */
   }
 }
@@ -1540,6 +1576,7 @@ html[data-theme='dark'] .btn-outline:hover {
 
   .sidebar-toggle {
     display: block;
+    margin-top: 10px;
   }
 
   .sidebar-nav,
