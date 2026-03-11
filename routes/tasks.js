@@ -1,6 +1,10 @@
 const express = require('express');
 const db = require('../database');
-const { syncTaskToSheet, importAllFromSheet } = require('../services/sheetsService');
+const {
+  syncTaskToSheet,
+  importAllFromSheet,
+  importMemberFromSheet
+} = require('../services/sheetsService');
 
 const router = express.Router();
 
@@ -248,6 +252,25 @@ router.post('/sync-sheet', async (req, res) => {
   } catch (err) {
     console.error(err);
     req.flash('error', 'Failed to sync tasks from sheet.');
+    res.redirect('/tasks');
+  }
+});
+
+// Member: sync only their own data from Google Sheet
+router.post('/sync-own', async (req, res) => {
+  try {
+    if (!req.session.user || !req.session.user.member_id) {
+      req.flash('error', 'You are not authorized to sync tasks.');
+      return res.redirect('/tasks');
+    }
+
+    const memberId = req.session.user.member_id;
+    await importMemberFromSheet(memberId);
+    req.flash('success', 'Your tasks have been synced from the sheet.');
+    res.redirect('/tasks');
+  } catch (err) {
+    console.error(err);
+    req.flash('error', 'Failed to sync your tasks from sheet.');
     res.redirect('/tasks');
   }
 });
