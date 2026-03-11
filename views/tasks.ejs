@@ -4,7 +4,14 @@
     <div class="card">
       <div class="card-header">
         <h2>Tasks</h2>
-        <button id="openAddTaskModal" class="btn btn-primary">Add Task</button>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <% if (currentUser && currentUser.role === 'superadmin') { %>
+            <form method="post" action="/tasks/sync-sheet" style="display:inline;">
+              <button type="submit" class="btn btn-outline btn-sm">Sync Sheet</button>
+            </form>
+          <% } %>
+          <button id="openAddTaskModal" class="btn btn-primary">Add Task</button>
+        </div>
       </div>
 
       <div class="filters-bar">
@@ -49,20 +56,22 @@
         Today is a holiday — are you sure you want to add a task?
       </div>
 
-      <div class="table-wrapper">
-        <table class="tasks-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Member</th>
-              <th>Task</th>
-              <th>Project</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tasksTableBody">
-            <% if (tasks.length) { %>
+      <% if (!tasks.length) { %>
+        <p class="empty-state" style="margin-top: 1rem;">No data found.</p>
+      <% } else { %>
+        <div class="table-wrapper">
+          <table class="tasks-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Member</th>
+                <th>Task</th>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tasksTableBody">
               <% tasks.forEach(function(task) { %>
                 <tr data-task-id="<%= task.id %>">
                   <td><%= task.dateFormatted %></td>
@@ -84,17 +93,11 @@
                   </td>
                 </tr>
               <% }) %>
-            <% } else { %>
-              <tr>
-                <td colspan="5" class="empty-state">No tasks found.</td>
-              </tr>
-            <% } %>
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
 
-      <div class="task-cards" id="taskCardsContainer">
-        <% if (tasks.length) { %>
+        <div class="task-cards" id="taskCardsContainer">
           <% tasks.forEach(function(task) { %>
             <div class="task-card" data-task-id="<%= task.id %>">
               <div class="task-card-header">
@@ -127,10 +130,8 @@
               </div>
             </div>
           <% }) %>
-        <% } else { %>
-          <p class="empty-state">No tasks found.</p>
-        <% } %>
-      </div>
+        </div>
+      <% } %>
     </div>
   </section>
 

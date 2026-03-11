@@ -281,6 +281,10 @@ ready(function () {
             if (row && row.parentNode) {
               row.parentNode.removeChild(row);
             }
+            var card = document.querySelector('.task-card[data-task-id="' + taskId + '"]');
+            if (card && card.parentNode) {
+              card.parentNode.removeChild(card);
+            }
             showToast('Task deleted.', 'success');
           })
           .catch(function () {
@@ -467,14 +471,28 @@ ready(function () {
         });
     }
 
-    window.addEventListener('scroll', function () {
+    var scrollContainer = document.querySelector('.main-content') || window;
+
+    function handleScroll() {
       if (!hasMore || loading) return;
-      var scrollPosition = window.innerHeight + window.scrollY;
-      var threshold = document.body.offsetHeight - 200;
+
+      var scrollPosition;
+      var threshold;
+
+      if (scrollContainer === window) {
+        scrollPosition = window.innerHeight + window.scrollY;
+        threshold = document.body.offsetHeight - 200;
+      } else {
+        scrollPosition = scrollContainer.scrollTop + scrollContainer.clientHeight;
+        threshold = scrollContainer.scrollHeight - 200;
+      }
+
       if (scrollPosition >= threshold) {
         loadMoreTasks();
       }
-    });
+    }
+
+    scrollContainer.addEventListener('scroll', handleScroll);
   }
 });
 

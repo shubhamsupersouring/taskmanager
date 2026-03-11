@@ -4,11 +4,16 @@
     <div class="member-header card">
       <div class="card-header">
         <h2><%= member.name %></h2>
-        <% if (currentUser && currentUser.role === 'superadmin') { %>
-          <a href="/summary/member/<%= member.id %>" class="btn btn-primary btn-sm">
-            Gemini AI Summary
-          </a>
-        <% } %>
+        <div>
+          <% if (currentUser && currentUser.role === 'superadmin') { %>
+            <form method="post" action="/members/<%= member.id %>/sync-sheet" style="display:inline;">
+              <button type="submit" class="btn btn-outline btn-sm">Sync Sheet</button>
+            </form>
+            <a href="/summary/member/<%= member.id %>" class="btn btn-primary btn-sm">
+              Gemini AI Summary
+            </a>
+          <% } %>
+        </div>
       </div>
       <div class="card-body">
         <p class="text-muted">Role: <strong><%= member.role %></strong></p>

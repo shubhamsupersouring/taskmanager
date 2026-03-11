@@ -661,9 +661,6 @@ tbody tr:hover {
   margin-top: 0.75rem;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 420px;
-  overflow-y: auto;
-  padding-right: 4px;
 }
 
 /* Hide table list on Tasks page – use cards instead */
@@ -1343,9 +1340,7 @@ html[data-theme='dark'] .holiday-label {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 0.75rem;
-  max-height: 420px;
-  overflow-y: auto;
-  padding-right: 4px;
+  /* Let the main page scroll instead of internal scrollbar */
 }
 
 .member-manage-card,

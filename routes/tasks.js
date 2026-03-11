@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../database');
+const { syncTaskToSheet, importAllFromSheet } = require('../services/sheetsService');
 
 const router = express.Router();
 
@@ -203,19 +204,50 @@ router.post('/add', async (req, res) => {
     const validStatuses = ['in-progress', 'done', 'blocked'];
     const finalStatus = validStatuses.includes(status) ? status : 'in-progress';
 
-    await db('tasks').insert({
+    const inserted = await db('tasks')
+      .insert({
       member_id: effectiveMemberId,
       date,
       task: task.trim(),
       status: finalStatus,
       project_id: project_id || null
-    });
+    })
+      .returning(['id']);
+
+    const created = Array.isArray(inserted) ? inserted[0] : inserted;
+
+    // Fire-and-forget sync to Google Sheet
+    if (created && created.id) {
+      syncTaskToSheet(created.id).catch((err) => {
+        console.error('Failed to sync task to Google Sheet', err);
+      });
+    }
 
     req.flash('success', 'Task added successfully.');
     res.redirect('/');
   } catch (err) {
     console.error(err);
     req.flash('error', 'Failed to add task.');
+    res.redirect('/tasks');
+  }
+});
+
+// Admin: import all members' data from Google Sheet
+router.post('/sync-sheet', async (req, res) => {
+  try {
+    const isSuperAdmin =
+      req.session.user && req.session.user.role === 'superadmin';
+    if (!isSuperAdmin) {
+      req.flash('error', 'You are not authorized to sync with the sheet.');
+      return res.redirect('/tasks');
+    }
+
+    await importAllFromSheet();
+    req.flash('success', 'All member tasks synced from sheet.');
+    res.redirect('/tasks');
+  } catch (err) {
+    console.error(err);
+    req.flash('error', 'Failed to sync tasks from sheet.');
     res.redirect('/tasks');
   }
 });

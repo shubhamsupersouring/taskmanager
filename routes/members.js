@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../database');
 const ExcelJS = require('exceljs');
 const { createMemberUserWithEmail } = require('../services/authService');
+const { importMemberFromSheet } = require('../services/sheetsService');
 
 const router = express.Router();
 
@@ -23,6 +24,18 @@ function getWeekStart(dateStr) {
   monday.setDate(d.getDate() + diffToMonday);
   monday.setHours(0, 0, 0, 0);
   return monday;
+}
+
+function toISODateKey(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    return value.slice(0, 10);
+  }
+  const d = new Date(value);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Admin members management list
@@ -128,6 +141,24 @@ router.post('/:id/delete', async (req, res) => {
     req.flash('error', 'Failed to delete member.');
   }
   res.redirect('/members');
+});
+
+// Import this member's data from Google Sheet
+router.post('/:id/sync-sheet', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'superadmin') {
+    req.flash('error', 'You are not authorized to sync with the sheet.');
+    return res.redirect('/');
+  }
+
+  try {
+    const { id } = req.params;
+    await importMemberFromSheet(id);
+    req.flash('success', 'Member tasks synced from sheet.');
+  } catch (err) {
+    console.error(err);
+    req.flash('error', 'Failed to sync member from sheet.');
+  }
+  res.redirect(`/members/${req.params.id}`);
 });
 
 // Export member's done work as Excel within a date range
@@ -348,48 +379,48 @@ router.get('/:id', async (req, res) => {
       mostProductiveWeekLabel = `${formatDate(monday)} - ${formatDate(sunday)} (${maxVal} tasks)`;
     }
 
-    // Build daily counts (last 14 days)
+    // Build daily counts (last 14 days) without timezone shifts
     const dailyCountsMap = {};
-    const now = new Date();
-    const cutoff = new Date(now);
-    cutoff.setDate(cutoff.getDate() - 13); // last 14 days including today
-
     for (const t of allTasksRows) {
-      const d = new Date(t.date);
-      if (d >= cutoff && d <= now) {
-        const key = d.toISOString().slice(0, 10);
-        dailyCountsMap[key] = (dailyCountsMap[key] || 0) + 1;
-      }
+      const key = toISODateKey(t.date);
+      if (!key) continue;
+      dailyCountsMap[key] = (dailyCountsMap[key] || 0) + 1;
     }
 
     const dailyLabels = [];
     const dailyData = [];
+    const now = new Date();
     for (let i = 13; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(now.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = toISODateKey(d);
       dailyLabels.push(formatDate(d));
       dailyData.push(dailyCountsMap[key] || 0);
     }
 
-    // Monthly done task counts (last 6 months)
-    const monthlyDoneMap = {};
+    // Monthly done tasks: daily progress for current month (1–31)
+    const current = new Date();
+    const currentYear = current.getFullYear();
+    const currentMonth = current.getMonth(); // 0-based
+
+    const monthlyDayMap = {};
     for (const t of allTasksRows) {
       if (t.status !== 'done') continue;
       const d = new Date(t.date);
-      const key = `${d.getFullYear()}-${String(
-        d.getMonth() + 1
-      ).padStart(2, '0')}`;
-      monthlyDoneMap[key] = (monthlyDoneMap[key] || 0) + 1;
+      if (d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
+        continue;
+      }
+      const day = d.getDate();
+      monthlyDayMap[day] = (monthlyDayMap[day] || 0) + 1;
     }
 
-    const monthlyKeys = Object.keys(monthlyDoneMap).sort().slice(-6);
-    const monthlyLabels = monthlyKeys.map((k) => {
-      const [year, month] = k.split('-');
-      const d = new Date(Number(year), Number(month) - 1, 1);
-      return d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
-    });
-    const monthlyData = monthlyKeys.map((k) => monthlyDoneMap[k]);
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const monthlyLabels = [];
+    const monthlyData = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      monthlyLabels.push(String(day));
+      monthlyData.push(monthlyDayMap[day] || 0);
+    }
 
     res.render('member-detail', {
       pageTitle: member.name,

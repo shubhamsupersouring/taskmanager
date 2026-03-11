@@ -5,7 +5,14 @@
       <div class="card">
         <div class="card-header">
           <h2>Team Today</h2>
-          <a href="/summary/team" class="btn btn-primary btn-sm">Weekly AI Summary</a>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <% if (currentUser && currentUser.role === 'superadmin') { %>
+              <form method="post" action="/tasks/sync-sheet" style="display:inline;">
+                <button type="submit" class="btn btn-outline btn-sm">Sync All Members</button>
+              </form>
+            <% } %>
+            <a href="/summary/team" class="btn btn-primary btn-sm">Weekly AI Summary</a>
+          </div>
         </div>
         <div class="member-grid">
           <% if (memberCards && memberCards.length) { %>
