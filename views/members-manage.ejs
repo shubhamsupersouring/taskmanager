@@ -1,42 +1,124 @@
 <%- include('partials/header') %>
 
-  <section class="tasks-layout">
-    <div class="card">
-      <div class="card-header">
-        <h2>Members</h2>
-        <button type="button" class="btn btn-primary btn-sm" id="openMemberModal">
-          Add member
+  <section class="content content-members">
+    <!-- STATS -->
+    <div class="m-stats">
+      <div class="ms-card">
+        <div class="ms-icon ms-total">
+          <i class="fa-regular fa-user"></i>
+        </div>
+        <div>
+          <div class="ms-val">
+            <%= typeof totalMembers !== 'undefined' ? totalMembers : (members && members.length) || 0 %>
+          </div>
+          <div class="ms-lbl">Total Members</div>
+        </div>
+      </div>
+      <div class="ms-card">
+        <div class="ms-icon ms-roles">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div>
+          <div class="ms-val"><%= (roles && roles.length) || 0 %></div>
+          <div class="ms-lbl">Unique Roles</div>
+        </div>
+      </div>
+      <div class="ms-card">
+        <div class="ms-icon ms-active">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+        <div>
+          <div class="ms-val"><%= latestJoinedLabel || '' %></div>
+          <div class="ms-lbl">Latest Joined</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH + VIEW TOGGLE -->
+    <form method="get" action="/members" class="toolbar members-toolbar">
+      <div class="search-wrap">
+        <input
+          class="search-inp"
+          type="text"
+          name="q"
+          id="memberSearch"
+          value="<%= searchQuery || '' %>"
+          placeholder="Search members…"
+        />
+      </div>
+
+      <input type="hidden" name="role" id="roleInput" value="<%= activeRole || '' %>">
+
+      <div class="role-filter" id="roleFilters">
+        <button type="button" class="rf-pill <%= !activeRole ? 'active' : '' %>" data-role="">All</button>
+        <% (roles || []).forEach(function(role) { %>
+          <button type="button" class="rf-pill <%= activeRole === role ? 'active' : '' %>" data-role="<%= role %>"><%= role %></button>
+        <% }) %>
+      </div>
+
+      <div class="ml-auto view-toggle">
+        <button type="button" class="vt-btn active" id="viewGrid" title="Grid view">
+          <i class="fa-solid fa-border-all"></i>
+        </button>
+        <button type="button" class="vt-btn" id="viewList" title="List view">
+          <i class="fa-solid fa-list"></i>
         </button>
       </div>
 
-      <div class="scroll-card-grid" style="margin-top: 0.75rem;">
-        <% if (members && members.length) { %>
-          <% members.forEach(function(member) { %>
-            <div
-              class="member-manage-card"
-              data-member-id="<%= member.id %>"
-              data-member-name="<%= member.name %>"
-              data-member-role="<%= member.role %>"
-              data-member-email="<%= member.user_email || '' %>"
-            >
-              <div class="member-manage-card-header">
-                <div class="member-manage-card-title"><%= member.name %></div>
-                <span class="text-muted" style="font-size: 0.75rem;">
-                  <%= new Date(member.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
-                </span>
+      <button type="button" class="btn btn-p" id="openMemberModal">
+        <i class="fa-solid fa-plus"></i> Add Member
+      </button>
+    </form>
+
+    <!-- MEMBER GRID -->
+    <div class="member-grid" id="memberGrid">
+      <% if (members && members.length) { %>
+        <% members.forEach(function(member) { %>
+          <div
+            class="mcard"
+            data-member-id="<%= member.id %>"
+            data-member-name="<%= member.name %>"
+            data-member-role="<%= member.role %>"
+            data-member-email="<%= member.user_email || '' %>"
+          >
+            <div class="mcard-inner">
+              <div class="mav-wrap">
+                <div class="mav">
+                  <%= (member.name || '?').split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase() %>
+                </div>
+                <div class="mav-status"></div>
               </div>
-              <div class="member-manage-card-meta">
-                <strong>Role:</strong> <%= member.role %>
+
+              <div class="mcard-info">
+                <div class="mcard-top">
+                  <div class="mcard-name"><%= member.name %></div>
+                  <div class="mcard-date">
+                    <% if (member.created_at) { %>
+                      <%= new Date(member.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="mcard-role">
+                  <i class="fa-solid fa-briefcase" style="font-size:10px;"></i>
+                  <%= member.role %>
+                </div>
+                <div class="mcard-email">
+                  <i class="fa-regular fa-envelope" style="font-size:11px;"></i>
+                  <span><%= member.user_email || 'Not linked' %></span>
+                </div>
               </div>
-              <div class="member-manage-card-meta">
-                <strong>Email:</strong> <%= member.user_email || 'Not linked' %>
-              </div>
-              <div class="member-manage-card-footer">
+
+              <div class="mcard-right">
+                <button type="button" class="mact-btn mact-view" onclick="window.location.href='/members/<%= member.id %>'">
+                  <i class="fa-regular fa-eye" style="font-size:11px;"></i>
+                  View
+                </button>
                 <button
                   type="button"
-                  class="btn btn-outline btn-sm edit-member"
+                  class="mact-btn mact-edit edit-member"
                   data-member-id="<%= member.id %>"
                 >
+                  <i class="fa-regular fa-pen-to-square" style="font-size:11px;"></i>
                   Edit
                 </button>
                 <form
@@ -45,19 +127,23 @@
                   class="member-delete-form"
                   style="display:inline;"
                 >
-                  <button type="button" class="btn btn-outline btn-sm text-danger member-delete-btn">
+                  <button type="button" class="mact-btn mact-del member-delete-btn">
+                    <i class="fa-regular fa-trash-can" style="font-size:11px;"></i>
                     Delete
                   </button>
                 </form>
               </div>
             </div>
-          <% }) %>
-        <% } else { %>
-          <p class="empty-state">No members defined yet.</p>
-        <% } %>
-      </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty" style="grid-column:1 / -1;">
+          <div class="ei"><i class="fa-regular fa-user" style="font-size:18px;"></i></div>
+          <div class="et">No members defined yet.</div>
+          <div class="es">Use “Add Member” to create your first team member.</div>
+        </div>
+      <% } %>
     </div>
-  </section>
 
   <div class="modal" id="memberModal">
     <div class="modal-backdrop" id="closeMemberModal"></div>
@@ -100,7 +186,56 @@
   </div>
 
   <script>
+    // View + role filters for members grid (server-side search)
     (function () {
+      var grid = document.getElementById('memberGrid');
+      var search = document.getElementById('memberSearch');
+      var roleContainer = document.getElementById('roleFilters');
+      var roleInput = document.getElementById('roleInput');
+      var toolbarForm = document.querySelector('.members-toolbar');
+
+      if (grid && search && toolbarForm) {
+        // Submit on Enter for search
+        search.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            toolbarForm.submit();
+          }
+        });
+
+        // Role pills set role hidden field and submit
+        if (roleContainer && roleInput) {
+          roleContainer.querySelectorAll('.rf-pill').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              roleContainer
+                .querySelectorAll('.rf-pill')
+                .forEach(function (b) {
+                  b.classList.remove('active');
+                });
+              btn.classList.add('active');
+              roleInput.value = btn.getAttribute('data-role') || '';
+              toolbarForm.submit();
+            });
+          });
+        }
+
+        var gridBtn = document.getElementById('viewGrid');
+        var listBtn = document.getElementById('viewList');
+        if (gridBtn && listBtn) {
+          gridBtn.addEventListener('click', function () {
+            grid.classList.remove('list-view');
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+          });
+          listBtn.addEventListener('click', function () {
+            grid.classList.add('list-view');
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+          });
+        }
+      }
+
+      // Existing modal + delete logic
       var modal = document.getElementById('memberModal');
       var openBtn = document.getElementById('openMemberModal');
       var closeBackdrop = document.getElementById('closeMemberModal');
@@ -158,7 +293,7 @@
 
       document.querySelectorAll('.edit-member').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          var card = btn.closest('.member-manage-card');
+          var card = btn.closest('.mcard');
           if (!card) return;
           var id = card.getAttribute('data-member-id');
           var name = card.getAttribute('data-member-name') || '';

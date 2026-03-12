@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
       rel="stylesheet"
     />
     <link
@@ -27,15 +27,53 @@
     <div class="app-container">
       <%- include('sidebar') %>
       <main class="main-content">
-        <header class="top-bar">
+        <header class="top-bar <%= (typeof topBarVariant !== 'undefined' && (topBarVariant === 'member' || topBarVariant === 'tasks')) ? 'top-bar-member' : '' %>">
           <div class="top-bar-left">
-            <h1 class="page-title"><%= pageTitle || 'Dashboard' %></h1>
+            <% if (typeof breadcrumb !== 'undefined' && breadcrumb && breadcrumb.length) { %>
+              <h1 class="page-title pg-title-bc">
+                <a href="<%= breadcrumb[0] === 'Members' ? '/members' : '#' %>" class="bc"><%= breadcrumb[0] %></a><span class="bc-sep">›</span><span class="bc-current"><%= breadcrumb[1] %></span>
+              </h1>
+            <% } else { %>
+              <h1 class="page-title"><%= pageTitle || 'Dashboard' %></h1>
+            <% } %>
           </div>
           <div class="top-bar-right">
-            <div class="today-date">
-              <span>Today</span>
-              <strong><%= todayFormatted || '' %></strong>
-            </div>
+            <% if (typeof topBarVariant !== 'undefined' && topBarVariant === 'member' && typeof member !== 'undefined' && member) { %>
+              <div class="dchip">Today — <b><%= todayFormatted || '' %></b></div>
+              <% if (currentUser && currentUser.role === 'superadmin') { %>
+                <form method="post" action="/members/<%= member.id %>/sync-sheet" class="top-bar-form-inline">
+                  <button type="submit" class="btn btn-g">
+                    <i class="fa-solid fa-arrows-rotate" style="font-size:11px;"></i> Sync Sheet
+                  </button>
+                </form>
+                <a href="/summary/member/<%= member.id %>" class="btn btn-p">
+                  <i class="fa-solid fa-wand-magic-sparkles" style="font-size:11px;"></i> Gemini AI Summary
+                </a>
+              <% } %>
+            <% } else if (typeof topBarVariant !== 'undefined' && topBarVariant === 'tasks') { %>
+              <div class="dchip">Today — <b><%= todayFormatted || '' %></b></div>
+              <% if (currentUser && currentUser.role === 'superadmin') { %>
+                <form method="post" action="/tasks/sync-sheet" class="top-bar-form-inline">
+                  <button type="submit" class="btn btn-g">
+                    <i class="fa-solid fa-arrows-rotate" style="font-size:11px;"></i> Sync Sheet
+                  </button>
+                </form>
+              <% } else if (currentUser && currentUser.member_id) { %>
+                <form method="post" action="/tasks/sync-own" class="top-bar-form-inline">
+                  <button type="submit" class="btn btn-g">
+                    <i class="fa-solid fa-arrows-rotate" style="font-size:11px;"></i> Sync My Tasks
+                  </button>
+                </form>
+              <% } %>
+              <button type="button" class="btn btn-p" id="openAddTaskModal">
+                <i class="fa-solid fa-plus" style="font-size:11px;"></i> Add Task
+              </button>
+            <% } else { %>
+              <div class="today-date">
+                <span>Today</span>
+                <strong><%= todayFormatted || '' %></strong>
+              </div>
+            <% } %>
           </div>
         </header>
 

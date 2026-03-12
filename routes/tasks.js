@@ -19,7 +19,7 @@ function formatDate(date) {
 }
 
 function applyTaskFilters(baseQuery, req, isSuperAdmin) {
-  const { member, date, status } = req.query;
+  const { member, date, status, project } = req.query;
 
   if (isSuperAdmin && member) {
     baseQuery.where('t.member_id', member);
@@ -31,6 +31,9 @@ function applyTaskFilters(baseQuery, req, isSuperAdmin) {
   }
   if (status) {
     baseQuery.where('t.status', status);
+  }
+  if (project) {
+    baseQuery.where('t.project_id', project);
   }
 
   return baseQuery;
@@ -58,18 +61,30 @@ router.get('/', async (req, res) => {
     const projects = await db('projects').select('*').orderBy('name');
 
     const page = parseInt(req.query.page || '1', 10) || 1;
+    const { member, date, status, project } = req.query;
 
-    const countQuery = applyTaskFilters(
+    const countBase = applyTaskFilters(
       db('tasks as t').join('members as m', 't.member_id', 'm.id'),
       req,
       isSuperAdmin
     );
-    const countRow = await countQuery
+    const countRow = await countBase
       .clone()
       .clearSelect()
       .count('* as count')
       .first();
     const total = Number(countRow?.count || 0);
+
+    const statusCounts = { 'in-progress': 0, done: 0, blocked: 0 };
+    for (const s of ['done', 'in-progress', 'blocked']) {
+      const r = await countBase
+        .clone()
+        .clearSelect()
+        .where('t.status', s)
+        .count('* as count')
+        .first();
+      statusCounts[s] = Number(r?.count || 0);
+    }
 
     const dataQuery = applyTaskFilters(
       db('tasks as t')
@@ -92,7 +107,6 @@ router.get('/', async (req, res) => {
 
     const hasMore = page * PAGE_SIZE < total;
 
-    const { member, date, status } = req.query;
     const queryParts = [];
     if (isSuperAdmin && member) {
       queryParts.push(`member=${encodeURIComponent(member)}`);
@@ -103,19 +117,26 @@ router.get('/', async (req, res) => {
     if (status) {
       queryParts.push(`status=${encodeURIComponent(status)}`);
     }
+    if (project) {
+      queryParts.push(`project=${encodeURIComponent(project)}`);
+    }
 
     const today = new Date();
     const isWeekend = today.getDay() === 0 || today.getDay() === 6;
 
     res.render('tasks', {
       pageTitle: 'Tasks',
+      topBarVariant: 'tasks',
       members,
       tasks,
       projects,
+      statusCounts,
+      totalTasks: total,
       filters: {
         member: isSuperAdmin ? member || '' : '',
         date: date || '',
-        status: status || ''
+        status: status || '',
+        project: project || ''
       },
       isWeekend,
       quickMemberId: req.query.member_id || '',
@@ -133,10 +154,13 @@ router.get('/', async (req, res) => {
     req.flash('error', 'Failed to load tasks.');
     res.render('tasks', {
       pageTitle: 'Tasks',
+      topBarVariant: 'tasks',
       members: [],
       tasks: [],
       projects: [],
-      filters: { member: '', date: '', status: '' },
+      statusCounts: { 'in-progress': 0, done: 0, blocked: 0 },
+      totalTasks: 0,
+      filters: { member: '', date: '', status: '', project: '' },
       isWeekend: false,
       quickMemberId: '',
       quickDate: '',
@@ -150,7 +174,6 @@ router.get('/page', async (req, res) => {
     const isSuperAdmin =
       req.session.user && req.session.user.role === 'superadmin';
     const page = parseInt(req.query.page || '1', 10) || 1;
-
     const baseQuery = applyTaskFilters(
       db('tasks as t')
         .select('t.*', 'm.name as member_name')
@@ -228,7 +251,7 @@ router.post('/add', async (req, res) => {
     }
 
     req.flash('success', 'Task added successfully.');
-    res.redirect('/');
+    res.redirect('/tasks');
   } catch (err) {
     console.error(err);
     req.flash('error', 'Failed to add task.');
@@ -278,6 +301,7 @@ router.post('/sync-own', async (req, res) => {
 router.post('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
+    const { status: requestedStatus } = req.body || {};
     const task = await db('tasks').where({ id }).first();
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found' });
@@ -296,9 +320,15 @@ router.post('/:id/status', async (req, res) => {
         .json({ success: false, message: 'Not allowed to update this task' });
     }
 
-    let nextStatus = 'in-progress';
-    if (task.status === 'in-progress') nextStatus = 'done';
-    else if (task.status === 'done') nextStatus = 'blocked';
+    const validStatuses = ['in-progress', 'done', 'blocked'];
+    let nextStatus;
+    if (requestedStatus && validStatuses.includes(requestedStatus)) {
+      nextStatus = requestedStatus;
+    } else {
+      nextStatus = 'in-progress';
+      if (task.status === 'in-progress') nextStatus = 'done';
+      else if (task.status === 'done') nextStatus = 'blocked';
+    }
 
     await db('tasks').where({ id }).update({ status: nextStatus });
 

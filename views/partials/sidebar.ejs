@@ -1,58 +1,63 @@
 <aside class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo-circle">TB</div>
-    <div class="logo-text">
-      <span class="logo-title">TrackerBabu</span>
-      <span class="logo-subtitle">Team Work Portal</span>
+  <div class="logo-wrap">
+    <div class="logo-row">
+      <div class="logo-badge">TB</div>
+      <div>
+        <div class="logo-name">TrackerBabu</div>
+        <div class="logo-sub">Team Work Portal</div>
+      </div>
     </div>
-    <button type="button" class="theme-toggle" data-theme-toggle>
-      <span class="theme-toggle-track">
-        <i class="fa-regular fa-sun theme-icon theme-icon-sun"></i>
-        <i class="fa-regular fa-moon theme-icon theme-icon-moon"></i>
-        <span class="theme-toggle-thumb"></span>
-      </span>
-    </button>
+    <label class="tm-toggle" title="Toggle theme" aria-label="Toggle theme">
+      <input type="checkbox" id="themeChk" />
+      <div class="tm-track">
+        <i class="tm-icon fa-regular fa-moon"></i>
+        <i class="tm-icon fa-regular fa-sun"></i>
+        <div class="tm-thumb"></div>
+      </div>
+    </label>
   </div>
 
-  <nav class="sidebar-nav">
-    <a href="/" class="nav-link <%= currentPath === '/' ? 'active' : '' %>">
-      Dashboard
+  <nav>
+    <div class="nav-lbl">Main</div>
+    <a href="/" class="nav-item <%= currentPath === '/' ? 'active' : '' %>">
+      <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Dashboard</span>
     </a>
-    <a href="/tasks" class="nav-link <%= currentPath.startsWith('/tasks') ? 'active' : '' %>">
-      Tasks
+    <a href="/tasks" class="nav-item <%= currentPath.startsWith('/tasks') ? 'active' : '' %>">
+      <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Tasks</span>
     </a>
     <% if (currentUser && currentUser.role === 'superadmin') { %>
-      <a href="/members" class="nav-link <%= currentPath.startsWith('/members') ? 'active' : '' %>">
-        Members
+      <a href="/members" class="nav-item <%= currentPath.startsWith('/members') ? 'active' : '' %>">
+        <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="17" cy="7" r="4"/><path d="M10.5 15H6a4 4 0 00-4 4v1"/><path d="M14 15a6 6 0 016 6"/></svg>
+        <span>Members</span>
       </a>
-      <a href="/projects" class="nav-link <%= currentPath.startsWith('/projects') ? 'active' : '' %>">
-        Projects
+      <a href="/projects" class="nav-item <%= currentPath.startsWith('/projects') ? 'active' : '' %>">
+        <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <span>Projects</span>
       </a>
-      <a href="/summary/team" class="nav-link <%= currentPath.startsWith('/summary') ? 'active' : '' %>">
-        Team Summary
+      <div class="nav-lbl">Reports</div>
+      <a href="/summary/team" class="nav-item <%= currentPath.startsWith('/summary') ? 'active' : '' %>">
+        <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Team Summary</span>
       </a>
     <% } %>
   </nav>
 
-  <div class="sidebar-footer">
+  <div class="sidebar-foot">
     <% if (currentUser) { %>
-      <div class="sidebar-user">
-        <div class="user-initial">
-          <%= currentUser.email.charAt(0).toUpperCase() %>
-        </div>
-        <div class="user-meta">
-          <div class="user-email"><%= currentUser.email %></div>
-          <div class="user-role"><%= currentUser.role === 'superadmin' ? 'Admin' : 'Member' %></div>
+      <div class="usr-card">
+        <div class="usr-av"><%= currentUser.email.charAt(0).toUpperCase() %></div>
+        <div>
+          <div class="usr-name"><%= currentUser.email %></div>
+          <div class="usr-role"><%= currentUser.role === 'superadmin' ? 'Administrator' : 'Member' %></div>
         </div>
       </div>
       <form method="post" action="/logout" class="sidebar-logout-form">
-        <button type="submit" class="btn btn-outline btn-sm sidebar-logout-btn">Logout</button>
+        <button type="submit" class="tb-btn tb-ghost sidebar-logout-btn">Logout</button>
       </form>
     <% } %>
   </div>
 
-  <button class="sidebar-toggle" id="sidebarToggle">
-    ☰
-  </button>
+  <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">☰</button>
 </aside>
-

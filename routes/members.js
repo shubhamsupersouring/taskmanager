@@ -48,14 +48,60 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    const members = await db('members as m')
+    const { q, role } = req.query;
+
+    const allMembers = await db('members as m')
       .leftJoin('users as u', 'u.member_id', 'm.id')
       .select('m.*', 'u.email as user_email')
       .orderBy('m.name');
 
+    // Roles for pills from full list
+    const roleSet = new Set(
+      allMembers.map((m) => (m.role || '').trim()).filter(Boolean)
+    );
+    const roles = Array.from(roleSet).sort();
+
+    // Apply search / role filters server-side
+    let members = allMembers;
+    if (role) {
+      members = members.filter(
+        (m) => (m.role || '').trim().toLowerCase() === role.toLowerCase()
+      );
+    }
+    if (q) {
+      const qLower = q.toLowerCase();
+      members = members.filter((m) => {
+        const name = (m.name || '').toLowerCase();
+        const r = (m.role || '').toLowerCase();
+        const email = (m.user_email || '').toLowerCase();
+        return (
+          name.includes(qLower) ||
+          r.includes(qLower) ||
+          email.includes(qLower)
+        );
+      });
+    }
+
+    const totalMembers = members.length;
+
+    // Latest joined (by created_at if available)
+    let latestJoinedLabel = '';
+    const withCreated = members.filter((m) => m.created_at);
+    if (withCreated.length) {
+      withCreated.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      latestJoinedLabel = formatDate(withCreated[0].created_at);
+    }
+
     res.render('members-manage', {
       pageTitle: 'Members',
-      members
+      members,
+      totalMembers,
+      roles,
+      latestJoinedLabel,
+      searchQuery: q || '',
+      activeRole: role || ''
     });
   } catch (err) {
     console.error(err);
@@ -295,7 +341,14 @@ router.get('/:id', async (req, res) => {
       }
     }
 
-    const member = await db('members').where({ id }).first();
+    const memberRow = await db('members as m')
+      .leftJoin('users as u', 'u.member_id', 'm.id')
+      .where('m.id', id)
+      .select('m.*', 'u.email as user_email')
+      .first();
+    const member = memberRow
+      ? { id: memberRow.id, name: memberRow.name, role: memberRow.role, email: memberRow.user_email }
+      : null;
 
     if (!member) {
       req.flash('error', 'Member not found.');
@@ -363,6 +416,9 @@ router.get('/:id', async (req, res) => {
       weekMap[key] += 1;
     }
 
+    const todayKey = toISODateKey(new Date());
+    const todayTaskCount = allTasksRows.filter((t) => toISODateKey(t.date) === todayKey).length;
+
     let mostProductiveWeekLabel = 'N/A';
     if (Object.keys(weekMap).length > 0) {
       let maxKey = null;
@@ -422,9 +478,14 @@ router.get('/:id', async (req, res) => {
       monthlyData.push(monthlyDayMap[day] || 0);
     }
 
+    const monthYearLabel = new Date(currentYear, currentMonth, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+
     res.render('member-detail', {
       pageTitle: member.name,
+      breadcrumb: ['Members', member.name],
+      topBarVariant: 'member',
       member,
+      todayTaskCount,
       tasks,
       totalTasks,
       statusCounts,
@@ -437,6 +498,7 @@ router.get('/:id', async (req, res) => {
         labels: monthlyLabels,
         data: monthlyData
       },
+      monthYearLabel,
       historyFilters: {
         date: filterDate
       },

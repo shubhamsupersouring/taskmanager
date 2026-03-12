@@ -1,181 +1,140 @@
 <%- include('partials/header') %>
 
-  <section class="member-detail-layout">
-    <div class="member-header card">
-      <div class="card-header">
-        <h2><%= member.name %></h2>
-        <div>
-          <% if (currentUser && currentUser.role === 'superadmin') { %>
-            <form method="post" action="/members/<%= member.id %>/sync-sheet" style="display:inline;">
-              <button type="submit" class="btn btn-outline btn-sm">Sync Sheet</button>
-            </form>
-            <a href="/summary/member/<%= member.id %>" class="btn btn-primary btn-sm">
-              Gemini AI Summary
-            </a>
-          <% } %>
+  <section class="content content-member-detail member-detail-layout">
+    <!-- HERO -->
+    <div class="md-hero hero">
+      <div class="hav">
+        <%= (member.name || '?').split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase() %>
+        <div class="sring"></div>
+      </div>
+      <div class="hinfo">
+        <div class="hname"><%= member.name %></div>
+        <div class="hmeta">
+          <div class="hrole">Role: <b><%= member.role %></b></div>
+          <% if (member.email) { %><div class="hdot"></div><div class="hemail"><%= member.email %></div><% } %>
+          <div class="hdot"></div>
+          <div class="pill <%= (typeof todayTaskCount !== 'undefined' && todayTaskCount > 0) ? 'pill-on' : 'pill-off' %>"><%= (typeof todayTaskCount !== 'undefined' && todayTaskCount > 0) ? '● Active' : 'Idle' %></div>
         </div>
       </div>
-      <div class="card-body">
-        <p class="text-muted">Role: <strong><%= member.role %></strong></p>
+      <div class="hacts">
+        <% if (currentUser && currentUser.role === 'superadmin') { %>
+          <a href="/members" class="btn btn-g"><i class="fa-solid fa-pen" style="font-size:11px;"></i> Edit</a>
+        <% } %>
+        <a href="/tasks?member_id=<%= member.id %>&date=<%= new Date().toISOString().slice(0,10) %>" class="btn btn-p"><i class="fa-solid fa-plus" style="font-size:11px;"></i> Add Task</a>
       </div>
     </div>
 
-    <div class="member-stats-grid">
-      <div class="card">
-        <div class="card-header">
-          <h3>Stats</h3>
-        </div>
-        <div class="card-body stats-pills">
-          <div class="stat-pill-item">
-            <span class="stat-label">Total tasks</span>
-            <span class="stat-value"><%= totalTasks %></span>
-          </div>
-          <div class="stat-pill-item">
-            <span class="stat-label">Done</span>
-            <span class="stat-pill status-done"><%= statusCounts.done %></span>
-          </div>
-          <div class="stat-pill-item">
-            <span class="stat-label">In progress</span>
-            <span class="stat-pill status-in-progress"><%= statusCounts['in-progress'] %></span>
-          </div>
-          <div class="stat-pill-item">
-            <span class="stat-label">Blocked</span>
-            <span class="stat-pill status-blocked"><%= statusCounts.blocked %></span>
-          </div>
-          <div class="stat-pill-item">
-            <span class="stat-label">Most productive week</span>
-            <span class="stat-value"><%= mostProductiveWeekLabel %></span>
-          </div>
-        </div>
+    <!-- MAIN GRID -->
+    <div class="grid2">
+      <!-- STATS -->
+      <div class="md-card card">
+        <div class="ctitle">Stats</div>
+        <div class="srow"><div class="slbl">Total tasks</div><div class="sval"><%= totalTasks %></div></div>
+        <div class="srow"><div class="slbl">Done</div><div class="sbadge bdn"><%= statusCounts.done %></div></div>
+        <div class="srow"><div class="slbl">In progress</div><div class="sbadge bip"><%= statusCounts['in-progress'] %></div></div>
+        <div class="srow"><div class="slbl">Blocked</div><div class="sbadge bbl"><%= statusCounts.blocked %></div></div>
+        <div class="srow"><div class="slbl">Most productive week</div><div class="sna"><%= mostProductiveWeekLabel %></div></div>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3>Task History</h3>
+      <!-- TASK HISTORY -->
+      <div class="md-card card">
+        <div class="th-head">
+          <div class="ctitle" style="margin-bottom:0">Task History</div>
+          <form method="get" action="/members/<%= member.id %>/export" class="export-form-inline" data-no-loader="true">
+            <input type="date" name="start" id="exportStart" class="inp inp-sm" required />
+            <input type="date" name="end" id="exportEnd" class="inp inp-sm" required />
+            <button type="submit" class="export-btn">
+              <i class="fa-solid fa-download" style="font-size:11px;"></i> Export Work
+            </button>
+          </form>
         </div>
-        <div class="card-body">
-          <form
-            method="get"
-            action="/members/<%= member.id %>/export"
-            class="filters-form"
-            data-no-loader="true"
-            style="margin-bottom: 0.75rem;"
-          >
-            <div class="form-group" style="flex: 1; min-width: 0;">
-              <label for="exportStart">Export from</label>
-              <input type="date" id="exportStart" name="start" required />
+
+        <div class="th-filters">
+          <form method="get" action="/members/<%= member.id %>" class="th-row">
+            <div class="th-field">
+              <label>Filter by Date</label>
+              <input type="date" class="inp" name="date" value="<%= historyFilters && historyFilters.date ? historyFilters.date : '' %>" id="dateFilter" />
             </div>
-            <div class="form-group" style="flex: 1; min-width: 0;">
-              <label for="exportEnd">to</label>
-              <input type="date" id="exportEnd" name="end" required />
-            </div>
-            <div class="filters-actions">
-              <button type="submit" class="btn btn-primary btn-sm">
-                Export Work
-              </button>
+            <div class="th-actions">
+              <button type="submit" class="apply-btn">Apply</button>
+              <a href="/members/<%= member.id %>" class="reset-btn">Reset</a>
             </div>
           </form>
+        </div>
 
-          <form method="get" action="/members/<%= member.id %>" class="filters-form" style="margin-bottom: 0.75rem;">
-            <div class="form-group">
-              <label for="historyDate">Date</label>
-              <input
-                type="date"
-                id="historyDate"
-                name="date"
-                value="<%= historyFilters && historyFilters.date ? historyFilters.date : '' %>"
-              />
-            </div>
-            <div class="filters-actions">
-              <button type="submit" class="btn btn-outline btn-sm">Apply</button>
-              <a href="/members/<%= member.id %>" class="btn-link">Reset</a>
-            </div>
-          </form>
-
-          <div class="table-wrapper">
-            <table class="tasks-table" id="memberHistoryTable">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Task</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
+        <div id="historyResult" class="history-result">
+          <% if (tasks.length) { %>
+            <table class="ttable">
+              <thead><tr><th>Date</th><th>Task</th><th>Status</th></tr></thead>
               <tbody id="memberHistoryBody">
-                <% if (tasks.length) { %>
-                  <% tasks.forEach(function(task) { %>
-                    <tr>
-                      <td><%= task.dateFormatted %></td>
-                      <td><%= task.task %></td>
-                      <td>
-                        <span class="status-pill <%= 'status-' + task.status %>">
-                          <%= task.status.replace('-', ' ') %>
-                        </span>
-                      </td>
-                    </tr>
-                  <% }) %>
-                <% } else { %>
+                <% tasks.forEach(function(task) { %>
                   <tr>
-                    <td colspan="3" class="empty-state">No tasks logged yet.</td>
+                    <td><%= task.dateFormatted %></td>
+                    <td><%= task.task %></td>
+                    <td><span class="tstatus ts-<%= task.status === 'done' ? 'dn' : task.status === 'in-progress' ? 'ip' : 'bl' %>"><span class="tsdot"></span><%= task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'Blocked' %></span></td>
                   </tr>
-                <% } %>
+                <% }) %>
               </tbody>
             </table>
-          </div>
-
-          <div class="member-task-cards" id="memberHistoryCards">
-            <% if (tasks.length) { %>
-              <% tasks.forEach(function(task) { %>
-                <div class="task-card">
-                  <div class="task-card-header">
-                    <div class="task-card-title"><%= task.task %></div>
-                    <span class="status-pill <%= 'status-' + task.status %>">
-                      <%= task.status.replace('-', ' ') %>
-                    </span>
-                  </div>
-                  <div class="task-card-body">
-                    <div class="task-card-meta">
-                      <span class="task-meta-label">Date</span>
-                      <span class="task-meta-value"><%= task.dateFormatted %></span>
-                    </div>
-                    <div class="task-card-meta">
-                      <span class="task-meta-label">Status</span>
-                      <span class="task-meta-value"><%= task.status.replace('-', ' ') %></span>
-                    </div>
-                  </div>
-                </div>
-              <% }) %>
-            <% } else { %>
-              <p class="empty-state">No tasks logged yet.</p>
+            <% if (historyPagination && historyPagination.hasMore) { %>
+              <p class="load-more-hint" id="memberHistoryLoading">Scroll to load more…</p>
             <% } %>
-          </div>
-
-          <% if (historyPagination && historyPagination.hasMore) { %>
-            <p class="text-muted" id="memberHistoryLoading" style="margin-top: 0.5rem; font-size: 0.8rem;">
-              Scroll to load more history…
-            </p>
+          <% } else { %>
+            <div class="empty">
+              <div class="ei"><i class="fa-regular fa-calendar" style="font-size:18px;"></i></div>
+              <div class="et">No tasks logged yet</div>
+              <div class="es">Tasks will appear here once logged</div>
+            </div>
           <% } %>
         </div>
       </div>
-    </div>
 
-    <div class="member-charts">
-      <div class="card">
-        <div class="card-header">
-          <h3>Daily tasks (last 14 days)</h3>
-        </div>
-        <div class="card-body">
+      <!-- DAILY CHART -->
+      <div class="md-card card">
+        <div class="ctitle">Daily tasks <span class="ctitle-note">(last 14 days)</span></div>
+        <div class="chart-wrap-md">
           <canvas id="dailyTasksChart"></canvas>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3>Monthly done tasks</h3>
-        </div>
-        <div class="card-body">
+      <!-- MONTHLY CHART -->
+      <div class="md-card card">
+        <div class="ctitle">Monthly done tasks <span class="ctitle-note">(<%= typeof monthYearLabel !== 'undefined' ? monthYearLabel : '' %>)</span></div>
+        <div class="chart-wrap-md">
           <canvas id="monthlyDoneChart"></canvas>
         </div>
+      </div>
+
+      <!-- RECENT TASKS (full width) -->
+      <div class="md-card card span2">
+        <div class="rt-head">
+          <div class="ctitle" style="margin-bottom:0">Recent Tasks</div>
+          <div class="rt-actions">
+            <a href="/tasks?member_id=<%= member.id %>" class="btn btn-g btn-sm"><i class="fa-solid fa-filter" style="font-size:10px;"></i> Filter</a>
+          </div>
+        </div>
+
+        <% if (tasks.length) { %>
+          <table class="ttable">
+            <thead><tr><th>Task</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+              <% tasks.slice(0, 10).forEach(function(task) { %>
+                <tr>
+                  <td><%= task.task %></td>
+                  <td><span class="tstatus ts-<%= task.status === 'done' ? 'dn' : task.status === 'in-progress' ? 'ip' : 'bl' %>"><span class="tsdot"></span><%= task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'Blocked' %></span></td>
+                  <td style="color:var(--dim2)"><%= task.dateFormatted %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div class="empty empty-lg">
+            <div class="ei"><i class="fa-regular fa-square-plus" style="font-size:22px;"></i></div>
+            <div class="et">No tasks assigned yet</div>
+            <div class="es">Once tasks are assigned to <%= member.name %>, they'll appear here</div>
+            <a href="/tasks?member_id=<%= member.id %>&date=<%= new Date().toISOString().slice(0,10) %>" class="btn btn-p" style="margin-top:10px;"><i class="fa-solid fa-plus" style="font-size:11px;"></i> Assign First Task</a>
+          </div>
+        <% } %>
       </div>
     </div>
   </section>
@@ -185,6 +144,7 @@
     (function () {
       var dailyData = <%- JSON.stringify(dailyChart || { labels: [], data: [] }) %>;
       var monthlyData = <%- JSON.stringify(monthlyChart || { labels: [], data: [] }) %>;
+      var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00d48a';
 
       var dailyCtx = document.getElementById('dailyTasksChart');
       if (dailyCtx && dailyData.labels.length) {
@@ -192,27 +152,13 @@
           type: 'bar',
           data: {
             labels: dailyData.labels,
-            datasets: [{
-              label: 'Tasks',
-              data: dailyData.data,
-              backgroundColor: 'rgba(68, 114, 196, 0.7)'
-            }]
+            datasets: [{ label: 'Tasks', data: dailyData.data, backgroundColor: accent + '99' }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false }
-            },
-            scales: {
-              x: {
-                ticks: { maxRotation: 90, minRotation: 45 }
-              },
-              y: {
-                beginAtZero: true,
-                precision: 0
-              }
-            }
+            plugins: { legend: { display: false } },
+            scales: { x: { ticks: { maxRotation: 45, font: { size: 10 } } }, y: { beginAtZero: true, precision: 0 } }
           }
         });
       }
@@ -224,10 +170,10 @@
           data: {
             labels: monthlyData.labels,
             datasets: [{
-              label: 'Done tasks',
+              label: 'Done',
               data: monthlyData.data,
-              borderColor: 'rgba(112, 173, 71, 1)',
-              backgroundColor: 'rgba(112, 173, 71, 0.2)',
+              borderColor: accent,
+              backgroundColor: accent + '33',
               tension: 0.3,
               fill: true
             }]
@@ -235,15 +181,8 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                precision: 0
-              }
-            }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, precision: 0 } }
           }
         });
       }
@@ -254,79 +193,41 @@
     (function () {
       var pagination = <%- JSON.stringify(historyPagination || null) %>;
       if (!pagination) return;
-
       var page = pagination.page || 1;
       var hasMore = !!pagination.hasMore;
       var loading = false;
-
       var memberId = "<%= member.id %>";
-      var currentDate = "<%= historyFilters && historyFilters.date ? historyFilters.date : '' %>";
-
+      var currentDate = "<%= (historyFilters && historyFilters.date) ? historyFilters.date : '' %>";
       var tableBody = document.getElementById('memberHistoryBody');
-      var cardsContainer = document.getElementById('memberHistoryCards');
       var loadingHint = document.getElementById('memberHistoryLoading');
 
       function appendTasks(tasks) {
+        if (!tableBody) return;
         tasks.forEach(function (task) {
+          var statusClass = task.status === 'done' ? 'dn' : task.status === 'in-progress' ? 'ip' : 'bl';
+          var statusLabel = task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'Blocked';
           var tr = document.createElement('tr');
-          tr.innerHTML =
-            '<td>' + task.dateFormatted + '</td>' +
-            '<td>' + task.task + '</td>' +
-            '<td><span class="status-pill status-' + task.status + '">' +
-            task.status.replace('-', ' ') +
-            '</span></td>';
-          if (tableBody) tableBody.appendChild(tr);
-
-          if (cardsContainer) {
-            var card = document.createElement('div');
-            card.className = 'task-card';
-            card.innerHTML =
-              '<div class="task-card-header">' +
-              '  <div class="task-card-title">' + task.task + '</div>' +
-              '  <span class="status-pill status-' + task.status + '">' +
-              task.status.replace('-', ' ') +
-              '</span>' +
-              '</div>' +
-              '<div class="task-card-body">' +
-              '  <div class="task-card-meta">' +
-              '    <span class="task-meta-label">Date</span>' +
-              '    <span class="task-meta-value">' + task.dateFormatted + '</span>' +
-              '  </div>' +
-              '  <div class="task-card-meta">' +
-              '    <span class="task-meta-label">Status</span>' +
-              '    <span class="task-meta-value">' + task.status.replace('-', ' ') + '</span>' +
-              '  </div>' +
-              '</div>';
-            cardsContainer.appendChild(card);
-          }
+          tr.innerHTML = '<td>' + task.dateFormatted + '</td><td>' + task.task + '</td><td><span class="tstatus ts-' + statusClass + '"><span class="tsdot"></span>' + statusLabel + '</span></td>';
+          tableBody.appendChild(tr);
         });
       }
 
       function loadMore() {
         if (loading || !hasMore) return;
         loading = true;
-
         var qs = 'page=' + (page + 1);
         if (currentDate) qs += '&date=' + encodeURIComponent(currentDate);
-
         if (window.showLoader) window.showLoader();
         fetch('/members/' + memberId + '/page?' + qs)
-          .then(function (res) {
-            if (!res.ok) throw new Error('Failed');
-            return res.json();
-          })
+          .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
           .then(function (data) {
             if (!data.success) return;
             page += 1;
             hasMore = data.hasMore;
             appendTasks(data.tasks);
-            if (!hasMore && loadingHint) {
-              loadingHint.textContent = 'No more history.';
-            }
+            if (!hasMore && loadingHint) loadingHint.textContent = 'No more history.';
           })
-          .catch(function () {
-            // silent
-          })
+          .catch(function () {})
           .finally(function () {
             loading = false;
             if (window.hideLoader) window.hideLoader();
@@ -335,18 +236,12 @@
 
       window.addEventListener('scroll', function () {
         if (!hasMore || loading) return;
-        var scrollPosition = window.innerHeight + window.scrollY;
-        var threshold = document.body.offsetHeight - 200;
-        if (scrollPosition >= threshold) {
-          loadMore();
-        }
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) loadMore();
       });
     })();
   </script>
-
   <script src="/script.js"></script>
-      </section>
+  </section>
     </div>
   </body>
 </html>
-

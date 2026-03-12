@@ -8,6 +8,13 @@ exports.up = async function (knex) {
       table.increments('id').primary();
       table.string('name').notNullable().unique();
       table.text('description');
+      table
+        .enu('status', ['active', 'completed', 'planning', 'on-hold'], {
+          useNative: false,
+          enumName: 'project_status_enum',
+        })
+        .notNullable()
+        .defaultTo('active');
       table.timestamp('created_at').defaultTo(knex.fn.now());
     });
   }

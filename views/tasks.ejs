@@ -1,134 +1,137 @@
 <%- include('partials/header') %>
 
-  <section class="tasks-layout">
-    <div class="card">
-      <div class="card-header">
-        <h2>Tasks</h2>
-        <div style="display:flex; gap:0.5rem; align-items:center;">
-          <% if (currentUser && currentUser.role === 'superadmin') { %>
-            <form method="post" action="/tasks/sync-sheet" style="display:inline;">
-              <button type="submit" class="btn btn-outline btn-sm">Sync Sheet</button>
-            </form>
-          <% } else if (currentUser && currentUser.member_id) { %>
-            <form method="post" action="/tasks/sync-own" style="display:inline;">
-              <button type="submit" class="btn btn-outline btn-sm">Sync My Tasks</button>
-            </form>
-          <% } %>
-          <button id="openAddTaskModal" class="btn btn-primary">Add Task</button>
+  <section class="content content-tasks tasks-layout">
+    <!-- Stats row (4 compact cards) -->
+    <div class="ts-stats-row">
+      <div class="ts-stat ts-stat-all">
+        <div class="ts-stat-ico ts-ico-all">
+          <i class="fa-regular fa-square-check"></i>
+        </div>
+        <div class="ts-stat-info">
+          <div class="ts-stat-num ts-num-all"><%= typeof totalTasks !== 'undefined' ? totalTasks : (pagination && pagination.total) || 0 %></div>
+          <div class="ts-stat-label">Total Tasks</div>
         </div>
       </div>
+      <div class="ts-stat ts-stat-done">
+        <div class="ts-stat-ico ts-ico-done">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="ts-stat-info">
+          <div class="ts-stat-num ts-num-done"><%= (statusCounts && statusCounts.done) || 0 %></div>
+          <div class="ts-stat-label">Done</div>
+        </div>
+      </div>
+      <div class="ts-stat ts-stat-prog">
+        <div class="ts-stat-ico ts-ico-prog">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div class="ts-stat-info">
+          <div class="ts-stat-num ts-num-prog"><%= (statusCounts && statusCounts['in-progress']) || 0 %></div>
+          <div class="ts-stat-label">In Progress</div>
+        </div>
+      </div>
+      <div class="ts-stat ts-stat-blk">
+        <div class="ts-stat-ico ts-ico-blk">
+          <i class="fa-solid fa-ban"></i>
+        </div>
+        <div class="ts-stat-info">
+          <div class="ts-stat-num ts-num-blk"><%= (statusCounts && statusCounts.blocked) || 0 %></div>
+          <div class="ts-stat-label">Blocked</div>
+        </div>
+      </div>
+    </div>
 
-      <div class="filters-bar">
-        <form method="get" action="/tasks" class="filters-form">
-          <% if (currentUser && currentUser.role === 'superadmin') { %>
-            <div class="form-group">
-              <label for="filterMember">Member</label>
-              <select id="filterMember" name="member">
-                <option value="">All</option>
-                <% members.forEach(function(member) { %>
-                  <option value="<%= member.id %>" <%= filters.member == member.id ? 'selected' : '' %>>
-                    <%= member.name %>
-                  </option>
-                <% }) %>
-              </select>
-            </div>
-          <% } %>
-
-          <div class="form-group">
-            <label for="filterDate">Date</label>
-            <input type="date" id="filterDate" name="date" value="<%= filters.date %>" />
-          </div>
-
-          <div class="form-group">
-            <label for="filterStatus">Status</label>
-            <select id="filterStatus" name="status">
+    <div class="ts-card card">
+      <div class="ctitle">Filters</div>
+      <form method="get" action="/tasks" class="ts-filters">
+        <% if (currentUser && currentUser.role === 'superadmin') { %>
+          <div class="th-field">
+            <label for="filterMember">Member</label>
+            <select id="filterMember" name="member" class="sel">
               <option value="">All</option>
-              <option value="in-progress" <%= filters.status === 'in-progress' ? 'selected' : '' %>>In progress</option>
-              <option value="done" <%= filters.status === 'done' ? 'selected' : '' %>>Done</option>
-              <option value="blocked" <%= filters.status === 'blocked' ? 'selected' : '' %>>Blocked</option>
+              <% members.forEach(function(member) { %>
+                <option value="<%= member.id %>" <%= filters.member == member.id ? 'selected' : '' %>><%= member.name %></option>
+              <% }) %>
             </select>
           </div>
+        <% } %>
+        <div class="th-field">
+          <label for="filterDate">Date</label>
+          <input type="date" id="filterDate" name="date" class="inp" value="<%= filters.date %>" />
+        </div>
+        <div class="th-field">
+          <label for="filterStatus">Status</label>
+          <select id="filterStatus" name="status" class="sel">
+            <option value="">All</option>
+            <option value="in-progress" <%= filters.status === 'in-progress' ? 'selected' : '' %>>In progress</option>
+            <option value="done" <%= filters.status === 'done' ? 'selected' : '' %>>Done</option>
+            <option value="blocked" <%= filters.status === 'blocked' ? 'selected' : '' %>>Blocked</option>
+          </select>
+        </div>
+        <div class="th-field">
+          <label for="filterProject">Project</label>
+          <select id="filterProject" name="project" class="sel">
+            <option value="">All</option>
+            <% (projects || []).forEach(function(proj) { %>
+              <option value="<%= proj.id %>" <%= (filters.project && filters.project == proj.id) ? 'selected' : '' %>><%= proj.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="th-actions">
+          <button type="submit" class="apply-btn">Apply</button>
+          <a href="/tasks" class="reset-btn">Reset</a>
+        </div>
+      </form>
 
-          <div class="filters-actions">
-            <button type="submit" class="btn btn-outline">Apply</button>
-            <a href="/tasks" class="btn-link">Reset</a>
-          </div>
-        </form>
-      </div>
-
-      <div id="weekendWarning" class="banner banner-warning" style="display: <%= isWeekend ? 'block' : 'none' %>;">
-        Today is a holiday — are you sure you want to add a task?
+      <div id="weekendWarning" class="ts-banner" style="display: <%= isWeekend ? 'block' : 'none' %>;">
+        <i class="fa-solid fa-circle-exclamation"></i> Today is a holiday — are you sure you want to add a task?
       </div>
 
       <% if (!tasks.length) { %>
-        <p class="empty-state" style="margin-top: 1rem;">No data found.</p>
-      <% } else { %>
-        <div class="table-wrapper">
-          <table class="tasks-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Member</th>
-                <th>Task</th>
-                <th>Project</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tasksTableBody">
-              <% tasks.forEach(function(task) { %>
-                <tr data-task-id="<%= task.id %>">
-                  <td><%= task.dateFormatted %></td>
-                  <td><%= task.member_name %></td>
-                  <td><%= task.task %></td>
-                  <td><%= task.project_name || '-' %></td>
-                  <td>
-                    <button
-                      class="status-toggle status-pill <%= 'status-' + task.status %>"
-                      data-task-id="<%= task.id %>"
-                    >
-                      <%= task.status.replace('-', ' ') %>
-                    </button>
-                  </td>
-                  <td>
-                    <button class="btn-link text-danger delete-task" data-task-id="<%= task.id %>">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+        <div class="empty">
+          <div class="ei"><i class="fa-regular fa-clipboard" style="font-size:18px;"></i></div>
+          <div class="et">No tasks found</div>
+          <div class="es">Adjust filters or add a task</div>
         </div>
-
-        <div class="task-cards" id="taskCardsContainer">
-          <% tasks.forEach(function(task) { %>
-            <div class="task-card" data-task-id="<%= task.id %>">
-              <div class="task-card-header">
-                <div class="task-card-title"><%= task.task %></div>
-                <button
-                  class="status-toggle status-pill <%= 'status-' + task.status %>"
-                  data-task-id="<%= task.id %>"
-                >
-                  <%= task.status.replace('-', ' ') %>
+      <% } else { %>
+        <div class="task-list">
+          <% tasks.forEach(function(task, idx) { %>
+                <% const statusClass = task.status === 'done' ? 'tc-done' : (task.status === 'in-progress' ? 'tc-prog' : 'tc-blk'); %>
+            <div class="task-card <%= statusClass %>" data-task-id="<%= task.id %>">
+              <div class="tc-left">
+                <div class="tc-title"><%= task.task %></div>
+                <div class="tc-meta">
+                  <div class="tc-field">
+                    <div class="tc-flbl">Date</div>
+                    <div class="tc-fval"><%= task.dateFormatted %></div>
+                  </div>
+                  <div class="tc-field">
+                    <div class="tc-flbl">Member</div>
+                    <div class="tc-fval member-val">
+                      <span class="m-tiny"><%= (task.member_name || '?').split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase() %></span>
+                      <%= task.member_name %>
+                    </div>
+                  </div>
+                  <div class="tc-field">
+                    <div class="tc-flbl">Project</div>
+                    <div class="tc-fval">
+                      <% if (task.project_name) { %>
+                        <span class="proj-tag has-proj"><%= task.project_name %></span>
+                      <% } else { %>
+                        <span class="proj-tag">No project</span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tc-right">
+                <% const isDone = task.status === 'done'; const isProg = task.status === 'in-progress'; %>
+                <button type="button" class="status-badge status-toggle <%= isDone ? 'sb-done' : (isProg ? 'sb-prog' : 'sb-blk') %>" data-task-id="<%= task.id %>" data-status="<%= task.status %>">
+                  <span class="sdot"></span>
+                  <%= isDone ? 'Done' : (isProg ? 'In Progress' : 'Blocked') %>
                 </button>
-              </div>
-              <div class="task-card-body">
-                <div class="task-card-meta">
-                  <span class="task-meta-label">Date</span>
-                  <span class="task-meta-value"><%= task.dateFormatted %></span>
-                </div>
-                <div class="task-card-meta">
-                  <span class="task-meta-label">Member</span>
-                  <span class="task-meta-value"><%= task.member_name %></span>
-                </div>
-                <div class="task-card-meta">
-                  <span class="task-meta-label">Project</span>
-                  <span class="task-meta-value"><%= task.project_name || '-' %></span>
-                </div>
-              </div>
-              <div class="task-card-footer">
-                <button class="btn-link text-danger delete-task" data-task-id="<%= task.id %>">
+                <button type="button" class="del-btn delete-task" data-task-id="<%= task.id %>">
+                  <i class="fa-solid fa-trash-can" style="font-size:11px;"></i>
                   Delete
                 </button>
               </div>
@@ -139,18 +142,43 @@
     </div>
   </section>
 
-  <div class="modal" id="addTaskModal">
-    <div class="modal-backdrop" id="closeAddTaskModal"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Add Task</h3>
-        <button class="modal-close" id="closeAddTaskModalBtn">&times;</button>
+  <!-- Status change modal -->
+  <div class="modal ts-modal" id="statusModal">
+    <div class="modal-backdrop" id="statusModalBackdrop"></div>
+    <div class="modal-content ts-modal-content">
+      <div class="modal-header ts-modal-header">
+        <h3 class="ts-modal-title">Update status</h3>
       </div>
-      <form method="post" action="/tasks/add" class="modal-body" id="addTaskForm">
+      <div class="modal-body ts-modal-body">
+        <div class="th-field">
+          <label for="statusSelect">Status</label>
+          <select id="statusSelect" class="sel">
+            <option value="in-progress">In progress</option>
+            <option value="done">Done</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+        <input type="hidden" id="statusTaskId" />
+      </div>
+      <div class="ts-modal-footer">
+        <button type="button" class="btn btn-g" id="statusCancelBtn">Cancel</button>
+        <button type="button" class="btn btn-p" id="statusSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal ts-modal" id="addTaskModal">
+    <div class="modal-backdrop" id="closeAddTaskModal"></div>
+    <div class="modal-content ts-modal-content">
+      <div class="modal-header ts-modal-header">
+        <h3 class="ts-modal-title">Add Task</h3>
+        <button type="button" class="modal-close" id="closeAddTaskModalBtn" aria-label="Close">&times;</button>
+      </div>
+      <form method="post" action="/tasks/add" class="modal-body ts-modal-body" id="addTaskForm">
         <% if (currentUser && currentUser.role === 'superadmin') { %>
-          <div class="form-group">
+          <div class="th-field">
             <label for="memberId">Member</label>
-            <select id="memberId" name="member_id" required>
+            <select id="memberId" name="member_id" class="sel" required>
               <option value="">Select member</option>
               <% members.forEach(function(member) { %>
                 <option value="<%= member.id %>"><%= member.name %></option>
@@ -158,62 +186,51 @@
             </select>
           </div>
         <% } %>
-
-        <div class="form-group">
+        <div class="th-field">
           <label for="taskDate">Date</label>
-          <input type="date" id="taskDate" name="date" required />
+          <input type="date" id="taskDate" name="date" class="inp" required />
         </div>
-
-        <div class="form-group">
+        <div class="th-field">
           <label for="projectId">Project</label>
-          <select id="projectId" name="project_id">
+          <select id="projectId" name="project_id" class="sel">
             <option value="">Select project</option>
             <% (projects || []).forEach(function(project) { %>
               <option value="<%= project.id %>"><%= project.name %></option>
             <% }) %>
           </select>
         </div>
-
-        <div class="form-group">
+        <div class="th-field">
           <label for="taskText">Task</label>
-          <textarea id="taskText" name="task" rows="3" required></textarea>
+          <textarea id="taskText" name="task" class="inp inp-textarea" rows="3" required></textarea>
         </div>
-
-        <div class="form-group">
+        <div class="th-field">
           <label for="taskStatus">Status</label>
-          <select id="taskStatus" name="status">
+          <select id="taskStatus" name="status" class="sel">
             <option value="in-progress">In progress</option>
             <option value="done">Done</option>
             <option value="blocked">Blocked</option>
           </select>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" id="cancelAddTask">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Task</button>
+        <div class="ts-modal-footer">
+          <button type="button" class="btn btn-g" id="cancelAddTask">Cancel</button>
+          <button type="submit" class="btn btn-p">Save Task</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div class="modal" id="confirmDeleteModal">
+  <div class="modal ts-modal" id="confirmDeleteModal">
     <div class="modal-backdrop" id="confirmDeleteCancel"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Delete task</h3>
+    <div class="modal-content ts-modal-content">
+      <div class="modal-header ts-modal-header">
+        <h3 class="ts-modal-title">Delete task</h3>
       </div>
-      <div class="modal-body">
-        <p id="confirmDeleteText">
-          Are you sure you want to permanently delete this task?
-        </p>
+      <div class="modal-body ts-modal-body">
+        <p id="confirmDeleteText">Are you sure you want to permanently delete this task?</p>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" id="confirmDeleteCancelBtn">
-          Cancel
-        </button>
-        <button type="button" class="btn btn-primary" id="confirmDeleteConfirmBtn">
-          Delete
-        </button>
+      <div class="ts-modal-footer">
+        <button type="button" class="btn btn-g" id="confirmDeleteCancelBtn">Cancel</button>
+        <button type="button" class="btn btn-p btn-danger" id="confirmDeleteConfirmBtn"><i class="fa-solid fa-trash-can"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -224,8 +241,7 @@
     window.tasksPagination = <%- JSON.stringify(pagination || null) %>;
   </script>
   <script src="/script.js"></script>
-      </section>
+  </section>
     </div>
   </body>
 </html>
-

@@ -1,81 +1,304 @@
 <%- include('partials/header') %>
 
-  <section class="tasks-layout">
-    <div class="card">
-      <div class="card-header">
-        <h2>Projects</h2>
+  <section class="content content-projects">
+    <!-- STATS ROW -->
+    <div class="pj-stats-row">
+      <div class="pj-stat">
+        <div class="pj-stat-ico pj-ico-all">
+          <i class="fa-solid fa-folder-tree"></i>
+        </div>
+        <div class="pj-stat-info">
+          <div class="pj-stat-num"><%= typeof totalProjects !== 'undefined' ? totalProjects : (projects && projects.length) || 0 %></div>
+          <div class="pj-stat-label">Total Projects</div>
+        </div>
+      </div>
+      <div class="pj-stat">
+        <div class="pj-stat-ico pj-ico-active">
+          <i class="fa-solid fa-play"></i>
+        </div>
+        <div class="pj-stat-info">
+          <div class="pj-stat-num"><%= typeof activeCount !== 'undefined' ? activeCount : 0 %></div>
+          <div class="pj-stat-label">Active</div>
+        </div>
+      </div>
+      <div class="pj-stat">
+        <div class="pj-stat-ico pj-ico-completed">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="pj-stat-info">
+          <div class="pj-stat-num"><%= typeof completedCount !== 'undefined' ? completedCount : 0 %></div>
+          <div class="pj-stat-label">Completed</div>
+        </div>
+      </div>
+      <div class="pj-stat">
+        <div class="pj-stat-ico pj-ico-pending">
+          <i class="fa-solid fa-pause"></i>
+        </div>
+        <div class="pj-stat-info">
+          <div class="pj-stat-num"><%= typeof pendingCount !== 'undefined' ? pendingCount : 0 %></div>
+          <div class="pj-stat-label">Planning / On hold</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <form method="get" action="/projects" class="toolbar projects-toolbar">
+      <div class="search-wrap">
+        <input
+          class="search-inp"
+          type="text"
+          name="q"
+          id="projectSearch"
+          value="<%= searchQuery || '' %>"
+          placeholder="Search projects…"
+        />
       </div>
 
-      <div class="card-body">
-        <form method="post" action="/projects/add" class="filters-form" id="projectForm">
+      <input type="hidden" name="status" id="projectStatusInput" value="<%= activeStatus || '' %>">
+
+      <div class="role-filter" id="projectStatusFilters">
+        <button type="button" class="rf-pill <%= !activeStatus ? 'active' : '' %>" data-status="">All</button>
+        <button type="button" class="rf-pill <%= activeStatus === 'active' ? 'active' : '' %>" data-status="active">Active</button>
+        <button type="button" class="rf-pill <%= activeStatus === 'completed' ? 'active' : '' %>" data-status="completed">Completed</button>
+        <button type="button" class="rf-pill <%= activeStatus === 'planning' ? 'active' : '' %>" data-status="planning">Planning</button>
+        <button type="button" class="rf-pill <%= activeStatus === 'on-hold' ? 'active' : '' %>" data-status="on-hold">On Hold</button>
+      </div>
+
+      <button type="button" class="btn btn-g ml-auto" id="openProjectModal">
+        <i class="fa-solid fa-plus"></i> Add Project
+      </button>
+    </form>
+
+    <!-- PROJECT GRID -->
+    <div class="project-grid" id="projectGrid">
+      <% if (projects && projects.length) { %>
+        <% projects.forEach(function(project) { %>
+          <div
+            class="pj-card"
+            data-project-id="<%= project.id %>"
+            data-project-name="<%= project.name %>"
+            data-project-description="<%= project.description || '' %>"
+            data-project-status="<%= (project.status || 'active').toLowerCase() %>"
+          >
+            <div class="pj-card-top">
+              <div class="pj-logo">
+                <%= (project.name || '?').split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase() %>
+              </div>
+              <div class="pj-top-right">
+                <span class="pj-date">
+                  <% if (project.created_at) { %>
+                    <%= new Date(project.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                  <% } %>
+                </span>
+              </div>
+            </div>
+
+            <div class="pj-title"><%= project.name %></div>
+            <div class="pj-desc"><%= project.description || 'No description added yet.' %></div>
+
+            <div class="pj-card-footer">
+              <button
+                type="button"
+                class="mact-btn pj-edit edit-project"
+                data-project-id="<%= project.id %>"
+              >
+                <i class="fa-regular fa-pen-to-square" style="font-size:11px;"></i>
+                Edit
+              </button>
+              <form
+                method="post"
+                action="/projects/<%= project.id %>/delete"
+                class="project-delete-form"
+                style="display:inline;"
+              >
+                <button type="button" class="mact-btn pj-del project-delete-btn">
+                  <i class="fa-regular fa-trash-can" style="font-size:11px;"></i>
+                  Delete
+                </button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty" style="grid-column:1 / -1;">
+          <div class="ei"><i class="fa-regular fa-folder-open" style="font-size:18px;"></i></div>
+          <div class="et">No projects defined yet.</div>
+          <div class="es">Use “Add Project” to create your first project.</div>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Add / Edit project modal (logic reused, UI compact) -->
+  <div class="modal ts-modal" id="projectModal">
+    <div class="modal-backdrop" data-close-project></div>
+    <div class="modal-content">
+      <div class="modal-header ts-modal-header">
+        <h3 id="projectModalTitle" class="ts-modal-title">Add project</h3>
+      </div>
+      <div class="modal-body ts-modal-body">
+        <form method="post" action="/projects/add" id="projectForm">
           <input type="hidden" name="id" id="projectId" />
 
-          <div class="form-group">
-            <label for="projectName">Project name</label>
-            <input id="projectName" name="name" type="text" required />
+          <div class="th-row">
+            <div class="th-field">
+              <label for="projectName">Project name</label>
+              <input id="projectName" name="name" type="text" class="inp" required />
+            </div>
           </div>
 
-          <div class="form-group" style="flex: 1;">
-            <label for="projectDescription">Description (optional)</label>
-            <input id="projectDescription" name="description" type="text" />
+          <div class="th-row">
+            <div class="th-field">
+              <label for="projectDescription">Description (optional)</label>
+              <input id="projectDescription" name="description" type="text" class="inp" />
+            </div>
           </div>
 
-          <div class="filters-actions">
-            <button type="submit" class="btn btn-primary" id="projectSubmitBtn">
-              Add project
-            </button>
-            <button type="button" class="btn btn-outline btn-sm" id="projectResetBtn" style="display:none;">
-              Cancel edit
-            </button>
+          <div class="th-row">
+            <div class="th-field">
+              <label for="projectStatus">Status</label>
+              <select id="projectStatus" name="status" class="sel">
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="planning">Planning</option>
+                <option value="on-hold">On Hold</option>
+              </select>
+            </div>
           </div>
         </form>
       </div>
-
-      <div class="scroll-card-grid" style="margin-top: 1rem;">
-        <% if (projects && projects.length) { %>
-          <% projects.forEach(function(project) { %>
-            <div
-              class="project-card"
-              data-project-id="<%= project.id %>"
-              data-project-name="<%= project.name %>"
-              data-project-description="<%= project.description || '' %>"
-            >
-              <div class="project-card-header">
-                <div class="project-card-title"><%= project.name %></div>
-                <span class="text-muted" style="font-size: 0.75rem;">
-                  <%= new Date(project.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
-                </span>
-              </div>
-              <div class="project-card-meta">
-                <%= project.description || 'No description provided.' %>
-              </div>
-              <div class="project-card-footer">
-                <button
-                  type="button"
-                  class="btn btn-outline btn-sm edit-project"
-                  data-project-id="<%= project.id %>"
-                >
-                  Edit
-                </button>
-                <form
-                  method="post"
-                  action="/projects/<%= project.id %>/delete"
-                  class="project-delete-form"
-                  style="display:inline;"
-                >
-                  <button type="button" class="btn btn-outline btn-sm text-danger project-delete-btn">
-                    Delete
-                  </button>
-                </form>
-              </div>
-            </div>
-          <% }) %>
-        <% } else { %>
-          <p class="empty-state">No projects defined yet.</p>
-        <% } %>
+      <div class="modal-footer ts-modal-footer">
+        <button type="button" class="btn btn-g" data-close-project>Cancel</button>
+        <button type="submit" form="projectForm" class="btn btn-p" id="projectSubmitBtn">
+          Save project
+        </button>
       </div>
     </div>
-  </section>
+  </div>
+
+  <!-- Shared delete confirmation modal -->
+  <div class="modal" id="confirmDeleteModal">
+    <div class="modal-backdrop" id="confirmDeleteCancel"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Confirm delete</h3>
+      </div>
+      <div class="modal-body">
+        <p id="confirmDeleteText">
+          Are you sure you want to delete this item?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="confirmDeleteCancelBtn">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="confirmDeleteConfirmBtn">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var toolbarForm = document.querySelector('.projects-toolbar');
+      var statusInput = document.getElementById('projectStatusInput');
+      var statusFilters = document.getElementById('projectStatusFilters');
+      var openModalBtn = document.getElementById('openProjectModal');
+      var projectModal = document.getElementById('projectModal');
+      var modalTitle = document.getElementById('projectModalTitle');
+      var form = document.getElementById('projectForm');
+      var idInput = document.getElementById('projectId');
+      var nameInput = document.getElementById('projectName');
+      var descInput = document.getElementById('projectDescription');
+      var statusSelect = document.getElementById('projectStatus');
+      var submitBtn = document.getElementById('projectSubmitBtn');
+
+      if (statusFilters && statusInput && toolbarForm) {
+        statusFilters.querySelectorAll('.rf-pill').forEach(function (pill) {
+          pill.addEventListener('click', function () {
+            var v = pill.getAttribute('data-status') || '';
+            statusInput.value = v;
+            toolbarForm.submit();
+          });
+        });
+      }
+
+      function openModal(mode, project) {
+        if (!projectModal) return;
+        if (mode === 'edit') {
+          modalTitle.textContent = 'Edit project';
+          submitBtn.textContent = 'Update project';
+          if (project) {
+            idInput.value = project.id || '';
+            nameInput.value = project.name || '';
+            descInput.value = project.description || '';
+            if (statusSelect) statusSelect.value = project.status || 'active';
+          }
+        } else {
+          modalTitle.textContent = 'Add project';
+          submitBtn.textContent = 'Save project';
+          idInput.value = '';
+          nameInput.value = '';
+          descInput.value = '';
+          if (statusSelect) statusSelect.value = 'active';
+        }
+        projectModal.classList.add('open');
+        if (nameInput) nameInput.focus();
+      }
+
+      function closeModal() {
+        if (!projectModal) return;
+        projectModal.classList.remove('open');
+      }
+
+      if (openModalBtn) {
+        openModalBtn.addEventListener('click', function () {
+          openModal('add');
+        });
+      }
+
+      document.querySelectorAll('[data-close-project]').forEach(function (el) {
+        el.addEventListener('click', closeModal);
+      });
+
+      document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('modal-backdrop') && e.target.closest('#projectModal')) {
+          closeModal();
+        }
+      });
+
+      document.querySelectorAll('.edit-project').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var card = btn.closest('.pj-card');
+          if (!card) return;
+          openModal('edit', {
+            id: card.getAttribute('data-project-id'),
+            name: card.getAttribute('data-project-name') || '',
+            description: card.getAttribute('data-project-description') || '',
+            status: card.getAttribute('data-project-status') || 'active'
+          });
+        });
+      });
+
+      // Themed delete modal for projects
+      document.querySelectorAll('.project-delete-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var formEl = btn.closest('form');
+          if (!formEl) return;
+          if (typeof openConfirm === 'function') {
+            openConfirm('Delete this project?', function () {
+              formEl.submit();
+            });
+          } else if (window.confirm('Delete this project?')) {
+            formEl.submit();
+          }
+        });
+      });
+    })();
+  </script>
+
+  <script src="/script.js"></script>
 
   <script>
     (function () {

@@ -43,12 +43,10 @@ ready(function () {
   var root = document.documentElement;
 
   function applyTheme(theme) {
-    if (theme === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-    } else {
-      root.removeAttribute('data-theme');
-    }
+    root.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
     localStorage.setItem(THEME_KEY, theme);
+    var chk = document.getElementById('themeChk');
+    if (chk) chk.checked = theme === 'light';
   }
 
   var savedTheme = localStorage.getItem(THEME_KEY) || 'light';
@@ -61,6 +59,21 @@ ready(function () {
       applyTheme(next);
     });
   });
+
+  // Sidebar theme toggle (checkbox): clicking the label toggles checkbox, we react to change
+  function initThemeChk() {
+    var themeChk = document.getElementById('themeChk');
+    if (themeChk && !themeChk._themeBound) {
+      themeChk._themeBound = true;
+      themeChk.addEventListener('change', function () {
+        applyTheme(this.checked ? 'light' : 'dark');
+      });
+    }
+  }
+  initThemeChk();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initThemeChk);
+  }
 
   // Generic confirm modal for deletes (tasks page)
   var confirmModal = document.getElementById('confirmDeleteModal');
@@ -224,12 +237,38 @@ ready(function () {
     openModal();
   }
 
-  document.querySelectorAll('.status-toggle').forEach(function (btn) {
-    if (btn._boundStatusToggle) return;
-    btn._boundStatusToggle = true;
-    btn.addEventListener('click', function () {
-      var taskId = this.getAttribute('data-task-id');
-      if (!taskId) return;
+  // Status change popup
+  var statusModal = document.getElementById('statusModal');
+  var statusModalBackdrop = document.getElementById('statusModalBackdrop');
+  var statusSelect = document.getElementById('statusSelect');
+  var statusTaskIdInput = document.getElementById('statusTaskId');
+  var statusCancelBtn = document.getElementById('statusCancelBtn');
+  var statusSaveBtn = document.getElementById('statusSaveBtn');
+
+  function openStatusModal(taskId, currentStatus) {
+    if (!statusModal || !statusSelect || !statusTaskIdInput) return;
+    statusTaskIdInput.value = taskId;
+    statusSelect.value = currentStatus || 'in-progress';
+    statusModal.classList.add('open');
+  }
+
+  function closeStatusModal() {
+    if (!statusModal) return;
+    statusModal.classList.remove('open');
+    statusTaskIdInput.value = '';
+  }
+
+  if (statusModalBackdrop) {
+    statusModalBackdrop.addEventListener('click', closeStatusModal);
+  }
+  if (statusCancelBtn) {
+    statusCancelBtn.addEventListener('click', closeStatusModal);
+  }
+  if (statusSaveBtn) {
+    statusSaveBtn.addEventListener('click', function () {
+      var taskId = statusTaskIdInput.value;
+      if (!taskId) return closeStatusModal();
+      var newStatus = statusSelect.value;
 
       showLoader();
       fetch('/tasks/' + taskId + '/status', {
@@ -237,7 +276,7 @@ ready(function () {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({ status: newStatus })
       })
         .then(function (res) {
           if (!res.ok) throw new Error('Failed to update status');
@@ -245,10 +284,31 @@ ready(function () {
         })
         .then(function (data) {
           if (!data.success) return;
-          var newStatus = data.status;
-          btn.classList.remove('status-in-progress', 'status-done', 'status-blocked');
-          btn.classList.add('status-' + newStatus);
-          btn.textContent = newStatus.replace('-', ' ');
+          var updatedStatus = data.status;
+          // update all badges for this task
+          document
+            .querySelectorAll('.status-toggle[data-task-id=\"' + taskId + '\"]')
+            .forEach(function (btn) {
+              btn.classList.remove(
+                'status-in-progress',
+                'status-done',
+                'status-blocked',
+                'ts-dn',
+                'ts-ip',
+                'ts-bl'
+              );
+              var statusClass = updatedStatus === 'done' ? 'ts-dn' : (updatedStatus === 'in-progress' ? 'ts-ip' : 'ts-bl');
+              btn.classList.add('status-' + updatedStatus, statusClass);
+              var label = updatedStatus === 'done' ? 'Done' : (updatedStatus === 'in-progress' ? 'In Progress' : 'Blocked');
+              var dot = btn.querySelector('.tsdot');
+              if (dot) {
+                btn.innerHTML = '';
+                btn.appendChild(dot);
+                btn.appendChild(document.createTextNode(label));
+              } else {
+                btn.textContent = label;
+              }
+            });
           showToast('Status updated.', 'success');
         })
         .catch(function () {
@@ -256,7 +316,19 @@ ready(function () {
         })
         .finally(function () {
           hideLoader();
+          closeStatusModal();
         });
+    });
+  }
+
+  document.querySelectorAll('.status-toggle').forEach(function (btn) {
+    if (btn._boundStatusToggle) return;
+    btn._boundStatusToggle = true;
+    btn.addEventListener('click', function () {
+      var taskId = this.getAttribute('data-task-id');
+      var currentStatus = this.getAttribute('data-status') || 'in-progress';
+      if (!taskId) return;
+      openStatusModal(taskId, currentStatus);
     });
   });
 
@@ -307,51 +379,46 @@ ready(function () {
     var baseQuery = window.tasksPagination.query || '';
 
     function createTaskRow(task) {
+      var statusClass = task.status === 'done' ? 'dn' : task.status === 'in-progress' ? 'ip' : 'bl';
+      var statusLabel = task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'Blocked';
       var tr = document.createElement('tr');
       tr.setAttribute('data-task-id', task.id);
       tr.innerHTML =
-        '<td>' + task.dateFormatted + '</td>' +
-        '<td>' + task.member_name + '</td>' +
-        '<td>' + task.task + '</td>' +
-        '<td>' + (task.project_name || '-') + '</td>' +
+        '<td>' + (task.task || '') + '</td>' +
+        '<td style="color:var(--dim2)">' + (task.project_name || '—') + '</td>' +
         '<td>' +
-        '  <button class="status-toggle status-pill status-' + task.status + '" data-task-id="' + task.id + '">' +
-        task.status.replace('-', ' ') +
+        '  <button type="button" class="tstatus status-toggle ts-' + statusClass + ' status-' + task.status + '" data-task-id="' + task.id + '" data-status="' + task.status + '">' +
+        '    <span class="tsdot"></span>' + statusLabel +
         '  </button>' +
         '</td>' +
+        '<td style="color:var(--dim2)">' + (task.dateFormatted || '') + '</td>' +
+        '<td style="color:var(--dim2)">' + (task.member_name || '') + '</td>' +
         '<td>' +
-        '  <button class="btn-link text-danger delete-task" data-task-id="' + task.id + '">Delete</button>' +
+        '  <button type="button" class="ts-delete delete-task" data-task-id="' + task.id + '"><i class="fa-solid fa-trash-can" style="font-size:11px;"></i> Delete</button>' +
         '</td>';
       return tr;
     }
 
     function createTaskCard(task) {
+      var statusClass = task.status === 'done' ? 'dn' : task.status === 'in-progress' ? 'ip' : 'bl';
+      var statusLabel = task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'Blocked';
       var div = document.createElement('div');
-      div.className = 'task-card';
+      div.className = 'ts-task-card';
       div.setAttribute('data-task-id', task.id);
       div.innerHTML =
-        '<div class="task-card-header">' +
-        '  <div class="task-card-title">' + task.task + '</div>' +
-        '  <button class="status-toggle status-pill status-' + task.status + '" data-task-id="' + task.id + '">' +
-        task.status.replace('-', ' ') +
+        '<div class="ts-task-card-h">' +
+        '  <div class="ts-task-title">' + (task.task || '') + '</div>' +
+        '  <button type="button" class="tstatus status-toggle ts-' + statusClass + ' status-' + task.status + '" data-task-id="' + task.id + '" data-status="' + task.status + '">' +
+        '    <span class="tsdot"></span>' + statusLabel +
         '  </button>' +
         '</div>' +
-        '<div class="task-card-body">' +
-        '  <div class="task-card-meta">' +
-        '    <span class="task-meta-label">Date</span>' +
-        '    <span class="task-meta-value">' + task.dateFormatted + '</span>' +
-        '  </div>' +
-        '  <div class="task-card-meta">' +
-        '    <span class="task-meta-label">Member</span>' +
-        '    <span class="task-meta-value">' + task.member_name + '</span>' +
-        '  </div>' +
-        '  <div class="task-card-meta">' +
-        '    <span class="task-meta-label">Project</span>' +
-        '    <span class="task-meta-value">' + (task.project_name || '-') + '</span>' +
-        '  </div>' +
+        '<div class="ts-task-card-b">' +
+        '  <div class="ts-meta"><span class="ts-meta-l">Project</span><span class="ts-meta-v">' + (task.project_name || '—') + '</span></div>' +
+        '  <div class="ts-meta"><span class="ts-meta-l">Date</span><span class="ts-meta-v">' + (task.dateFormatted || '') + '</span></div>' +
+        '  <div class="ts-meta"><span class="ts-meta-l">Member</span><span class="ts-meta-v">' + (task.member_name || '') + '</span></div>' +
         '</div>' +
-        '<div class="task-card-footer">' +
-        '  <button class="btn-link text-danger delete-task" data-task-id="' + task.id + '">Delete</button>' +
+        '<div class="ts-task-card-f">' +
+        '  <button type="button" class="ts-delete delete-task" data-task-id="' + task.id + '"><i class="fa-solid fa-trash-can"></i> Delete</button>' +
         '</div>';
       return div;
     }
@@ -379,9 +446,17 @@ ready(function () {
             .then(function (data) {
               if (!data.success) return;
               var newStatus = data.status;
-              btn.classList.remove('status-in-progress', 'status-done', 'status-blocked');
+              btn.classList.remove('status-in-progress', 'status-done', 'status-blocked', 'ts-dn', 'ts-ip', 'ts-bl');
               btn.classList.add('status-' + newStatus);
-              btn.textContent = newStatus.replace('-', ' ');
+              var label = newStatus.replace('-', ' ');
+              var dot = btn.querySelector('.tsdot');
+              if (dot) {
+                btn.innerHTML = '';
+                btn.appendChild(dot);
+                btn.appendChild(document.createTextNode(label));
+              } else {
+                btn.textContent = label;
+              }
               showToast('Status updated.', 'success');
             })
             .catch(function () {
