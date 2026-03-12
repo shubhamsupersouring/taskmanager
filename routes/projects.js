@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../database');
 
 const router = express.Router();
+const PROJECT_PAGE_SIZE = 10;
 
 router.get('/', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'superadmin') {
@@ -11,23 +12,32 @@ router.get('/', async (req, res) => {
 
   try {
     const { q, status } = req.query;
+    const page = parseInt(req.query.page || '1', 10) || 1;
 
     const all = await db('projects').select('*').orderBy('name');
 
-    let projects = all;
+    let filtered = all;
     if (status) {
-      projects = projects.filter(
+      filtered = filtered.filter(
         (p) => (p.status || '').toLowerCase() === status.toLowerCase()
       );
     }
     if (q) {
       const qLower = q.toLowerCase();
-      projects = projects.filter((p) => {
+      filtered = filtered.filter((p) => {
         const name = (p.name || '').toLowerCase();
         const desc = (p.description || '').toLowerCase();
         return name.includes(qLower) || desc.includes(qLower);
       });
     }
+
+    const totalFiltered = filtered.length;
+    const startIdx = (page - 1) * PROJECT_PAGE_SIZE;
+    const pageProjects = filtered.slice(
+      startIdx,
+      startIdx + PROJECT_PAGE_SIZE
+    );
+    const hasMore = page * PROJECT_PAGE_SIZE < totalFiltered;
 
     const totalProjects = all.length;
     const activeCount = all.filter((p) => (p.status || 'active') === 'active')
@@ -40,20 +50,81 @@ router.get('/', async (req, res) => {
       return s === 'planning' || s === 'on-hold' || s === 'pending';
     }).length;
 
+    const queryParts = [];
+    if (q) {
+      queryParts.push(`q=${encodeURIComponent(q)}`);
+    }
+    if (status) {
+      queryParts.push(`status=${encodeURIComponent(status)}`);
+    }
+
     res.render('projects', {
       pageTitle: 'Projects',
-      projects,
+      projects: pageProjects,
       totalProjects,
       activeCount,
       completedCount,
       pendingCount,
       searchQuery: q || '',
-      activeStatus: status || ''
+      activeStatus: status || '',
+      pagination: {
+        page,
+        pageSize: PROJECT_PAGE_SIZE,
+        total: totalFiltered,
+        hasMore,
+        query: queryParts.join('&')
+      }
     });
   } catch (err) {
     console.error(err);
     req.flash('error', 'Failed to load projects.');
     res.redirect('/');
+  }
+});
+
+// Projects pagination JSON for infinite scroll
+router.get('/page', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'superadmin') {
+    return res
+      .status(403)
+      .json({ success: false, message: 'Not authorized to view projects.' });
+  }
+
+  try {
+    const { q, status } = req.query;
+    const page = parseInt(req.query.page || '1', 10) || 1;
+
+    const all = await db('projects').select('*').orderBy('name');
+
+    let filtered = all;
+    if (status) {
+      filtered = filtered.filter(
+        (p) => (p.status || '').toLowerCase() === status.toLowerCase()
+      );
+    }
+    if (q) {
+      const qLower = q.toLowerCase();
+      filtered = filtered.filter((p) => {
+        const name = (p.name || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return name.includes(qLower) || desc.includes(qLower);
+      });
+    }
+
+    const totalFiltered = filtered.length;
+    const startIdx = (page - 1) * PROJECT_PAGE_SIZE;
+    const pageProjects = filtered.slice(
+      startIdx,
+      startIdx + PROJECT_PAGE_SIZE
+    );
+    const hasMore = page * PROJECT_PAGE_SIZE < totalFiltered;
+
+    res.json({ success: true, projects: pageProjects, hasMore });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to load more projects.' });
   }
 });
 

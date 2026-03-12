@@ -38,6 +38,29 @@ function toISODateKey(value) {
   return `${year}-${month}-${day}`;
 }
 
+function filterMembersList(allMembers, q, role) {
+  let members = allMembers;
+  if (role) {
+    members = members.filter(
+      (m) => (m.role || '').trim().toLowerCase() === role.toLowerCase()
+    );
+  }
+  if (q) {
+    const qLower = q.toLowerCase();
+    members = members.filter((m) => {
+      const name = (m.name || '').toLowerCase();
+      const r = (m.role || '').toLowerCase();
+      const email = (m.user_email || '').toLowerCase();
+      return (
+        name.includes(qLower) ||
+        r.includes(qLower) ||
+        email.includes(qLower)
+      );
+    });
+  }
+  return members;
+}
+
 // Admin members management list
 router.get('/', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'superadmin') {
@@ -56,37 +79,24 @@ router.get('/', async (req, res) => {
       .orderBy('m.name');
 
     // Roles for pills from full list
-    const roleSet = new Set(
-      allMembers.map((m) => (m.role || '').trim()).filter(Boolean)
-    );
+    const roleSet = new Set(allMembers.map((m) => (m.role || '').trim()).filter(Boolean));
     const roles = Array.from(roleSet).sort();
 
-    // Apply search / role filters server-side
-    let members = allMembers;
-    if (role) {
-      members = members.filter(
-        (m) => (m.role || '').trim().toLowerCase() === role.toLowerCase()
-      );
-    }
-    if (q) {
-      const qLower = q.toLowerCase();
-      members = members.filter((m) => {
-        const name = (m.name || '').toLowerCase();
-        const r = (m.role || '').toLowerCase();
-        const email = (m.user_email || '').toLowerCase();
-        return (
-          name.includes(qLower) ||
-          r.includes(qLower) ||
-          email.includes(qLower)
-        );
-      });
-    }
+    // Apply search / role filters
+    const filteredMembers = filterMembersList(allMembers, q, role);
+    const totalMembers = filteredMembers.length;
 
-    const totalMembers = members.length;
+    const page = parseInt(req.query.page || '1', 10) || 1;
+    const startIdx = (page - 1) * MEMBER_PAGE_SIZE;
+    const pageMembers = filteredMembers.slice(
+      startIdx,
+      startIdx + MEMBER_PAGE_SIZE
+    );
+    const hasMore = page * MEMBER_PAGE_SIZE < totalMembers;
 
     // Latest joined (by created_at if available)
     let latestJoinedLabel = '';
-    const withCreated = members.filter((m) => m.created_at);
+    const withCreated = filteredMembers.filter((m) => m.created_at);
     if (withCreated.length) {
       withCreated.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -94,19 +104,70 @@ router.get('/', async (req, res) => {
       latestJoinedLabel = formatDate(withCreated[0].created_at);
     }
 
+    const queryParts = [];
+    if (q) {
+      queryParts.push(`q=${encodeURIComponent(q)}`);
+    }
+    if (role) {
+      queryParts.push(`role=${encodeURIComponent(role)}`);
+    }
+
     res.render('members-manage', {
       pageTitle: 'Members',
-      members,
+      members: pageMembers,
       totalMembers,
       roles,
       latestJoinedLabel,
       searchQuery: q || '',
-      activeRole: role || ''
+      activeRole: role || '',
+      pagination: {
+        page,
+        pageSize: MEMBER_PAGE_SIZE,
+        total: totalMembers,
+        hasMore,
+        query: queryParts.join('&')
+      }
     });
   } catch (err) {
     console.error(err);
     req.flash('error', 'Failed to load members.');
     res.redirect('/');
+  }
+});
+
+// Members pagination JSON for infinite scroll
+router.get('/page', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'superadmin') {
+    return res
+      .status(403)
+      .json({ success: false, message: 'Not authorized to view members.' });
+  }
+
+  try {
+    const { q, role } = req.query;
+    const page = parseInt(req.query.page || '1', 10) || 1;
+
+    const allMembers = await db('members as m')
+      .leftJoin('users as u', 'u.member_id', 'm.id')
+      .select('m.*', 'u.email as user_email')
+      .orderBy('m.name');
+
+    const filteredMembers = filterMembersList(allMembers, q, role);
+    const total = filteredMembers.length;
+
+    const startIdx = (page - 1) * MEMBER_PAGE_SIZE;
+    const pageMembers = filteredMembers.slice(
+      startIdx,
+      startIdx + MEMBER_PAGE_SIZE
+    );
+    const hasMore = page * MEMBER_PAGE_SIZE < total;
+
+    res.json({ success: true, members: pageMembers, hasMore });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to load more members.' });
   }
 });
 
@@ -191,13 +252,23 @@ router.post('/:id/delete', async (req, res) => {
 
 // Import this member's data from Google Sheet
 router.post('/:id/sync-sheet', async (req, res) => {
-  if (!req.session.user || req.session.user.role !== 'superadmin') {
+  if (!req.session.user) {
     req.flash('error', 'You are not authorized to sync with the sheet.');
     return res.redirect('/');
   }
 
+  const { id } = req.params;
+  const isSuperAdmin = req.session.user.role === 'superadmin';
+  const isSelfMember =
+    req.session.user.member_id &&
+    String(req.session.user.member_id) === String(id);
+
+  if (!isSuperAdmin && !isSelfMember) {
+    req.flash('error', 'You are not authorized to sync this member.');
+    return res.redirect('/');
+  }
+
   try {
-    const { id } = req.params;
     await importMemberFromSheet(id);
     req.flash('success', 'Member tasks synced from sheet.');
   } catch (err) {

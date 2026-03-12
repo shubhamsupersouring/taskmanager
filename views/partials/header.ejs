@@ -24,27 +24,116 @@
       <div class="loader-spinner"></div>
     </div>
     <div class="ai-loader-backdrop" id="teamSummaryLoader">
-      <div class="ai-loader-modal">
-        <div class="ai-loader-header">
-          <div class="ai-loader-title">Team weekly AI summary</div>
-          <div class="ai-loader-sub">
-            Fetching recent tasks and asking Gemini to prepare a concise weekly report for your team.
-          </div>
-        </div>
-        <div class="ai-loader-wrap">
-          <div class="ai-loader-top">
-            <div class="ai-loader-status">
-              <div class="ai-spinner" id="aiSpinner"></div>
-              <span class="ai-status-label" id="aiStatusLabel">Fetching…</span>
+      <div class="ai-loader-modal ai-task-card">
+        <div class="ai-task-progress-block">
+          <div class="ai-task-prog-top">
+            <div class="ai-task-prog-left">
+              <div class="ai-task-prog-phase" id="aiProgPhase">Phase 1 / 3 — Fetch</div>
+              <div class="ai-task-prog-status" id="aiProgStatus">Fetching…</div>
             </div>
-            <span class="ai-pct-label" id="aiPctLabel">0%</span>
+            <div class="ai-task-prog-right">
+              <span class="ai-task-pct-num" id="aiPctNum">0</span>
+              <div class="ai-task-pct-label">Complete</div>
+            </div>
           </div>
-          <div class="ai-bar-bg">
-            <div class="ai-bar-fill" id="aiBarFill"></div>
+          <div class="ai-task-bar-wrap" id="aiBarWrap"></div>
+          <div class="ai-task-bar-meta">
+            <div class="ai-task-bar-dots">
+              <div class="ai-task-bar-dot-item"><div class="ai-task-dot ai-task-dot-a"></div>Fetch</div>
+              <div class="ai-task-bar-dot-item"><div class="ai-task-dot ai-task-dot-b"></div>Read</div>
+              <div class="ai-task-bar-dot-item"><div class="ai-task-dot ai-task-dot-c"></div>Generate</div>
+            </div>
+            <div class="ai-task-eta-label" id="aiEtaLbl">ETA —</div>
           </div>
         </div>
-        <div class="ai-loader-footer">
-          <button type="button" class="ai-loader-cancel" id="aiCancelBtn">Cancel</button>
+        <div class="ai-task-log-block">
+          <div class="ai-task-log-line" id="aiLogLine">Initialising AI task summary engine…</div>
+        </div>
+        <div class="ai-task-footer">
+          <div class="ai-task-stats">
+            <div class="ai-task-stat">
+              <div class="ai-task-stat-val" id="aiElapsedVal">0.0s</div>
+              <div class="ai-task-stat-key">Elapsed</div>
+            </div>
+            <div class="ai-task-stat">
+              <div class="ai-task-stat-val" id="aiTokensVal">0</div>
+              <div class="ai-task-stat-key">Tokens</div>
+            </div>
+            <div class="ai-task-stat">
+              <div class="ai-task-stat-val" id="aiStageVal">—</div>
+              <div class="ai-task-stat-key">Stage</div>
+            </div>
+          </div>
+          <button type="button" class="ai-task-btn-cancel" id="aiCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="ai-loader-backdrop" id="sheetSyncLoader">
+      <div class="ai-loader-modal sheet-modal">
+        <div class="modal-header sheets-header">
+          <div class="header-left">
+            <div class="sheets-icon-wrap">
+              <svg viewBox="0 0 32 32" fill="none">
+                <rect x="4" y="2" width="18" height="22" rx="2" fill="#0f9d58" />
+                <path d="M18 2v6h6" fill="none" stroke="white" stroke-width="1.5" />
+                <path d="M18 2l6 6H20a2 2 0 0 1-2-2V2z" fill="#087a43" />
+                <rect x="7" y="12" width="12" height="1.4" rx="0.5" fill="white" opacity="0.9" />
+                <rect x="7" y="15.5" width="12" height="1.4" rx="0.5" fill="white" opacity="0.9" />
+                <rect x="7" y="19" width="8" height="1.4" rx="0.5" fill="white" opacity="0.9" />
+              </svg>
+            </div>
+            <div class="header-text">
+              <div class="modal-title">Syncing from Google Sheets</div>
+              <div class="modal-subtitle" id="sheetPhase">Phase 1 / 3 — CONNECT</div>
+            </div>
+          </div>
+          <div class="live-badge">
+            <div class="live-dot"></div>Live Sync
+          </div>
+        </div>
+        <div class="progress-section">
+          <div class="progress-top">
+            <div class="progress-label-group">
+              <div class="progress-status" id="sheetStatus">Connecting to Google Sheets…</div>
+            </div>
+            <div class="pct-group">
+              <span class="pct-big" id="sheetPctNum">0</span>
+              <div class="pct-small">Complete</div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="sheetBarFill"></div>
+          </div>
+          <div class="bar-labels">
+            <div class="bar-label-row">
+              <div class="bar-label-item"><div class="bar-dot d1"></div>Connect</div>
+              <div class="bar-label-item"><div class="bar-dot d2"></div>Read</div>
+              <div class="bar-label-item"><div class="bar-dot d3"></div>Sync</div>
+            </div>
+            <div class="bar-label-item" id="sheetEta">ETA —</div>
+          </div>
+        </div>
+        <div class="log-stream">
+          <div class="log-line" id="sheetLogLine">Initialising extraction engine…</div>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-left">
+            <div class="f-stat">
+              <div class="f-stat-val" id="sheetElapsed">0.0s</div>
+              <div class="f-stat-key">Elapsed</div>
+            </div>
+            <div class="f-stat">
+              <div class="f-stat-val" id="sheetStage">—</div>
+              <div class="f-stat-key">Stage</div>
+            </div>
+          </div>
+          <button type="button" class="btn-cancel" id="sheetCancelBtn">Cancel</button>
+        </div>
+        <div class="done-overlay" id="sheetDoneOverlay">
+          <div class="done-inner">
+            <svg class="done-check" viewBox="0 0 24 24"><polyline points="5 13 10 18 19 7" /></svg>
+          </div>
+          <div class="done-title">Sync complete</div>
         </div>
       </div>
     </div>
@@ -63,6 +152,17 @@
             <% } %>
           </div>
           <div class="top-bar-right">
+            <button
+              type="button"
+              class="theme-btn header-theme-btn"
+              data-theme-toggle
+              aria-label="Toggle theme"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+              </svg>
+              <span>Toggle theme</span>
+            </button>
             <% if (typeof topBarVariant !== 'undefined' && topBarVariant === 'member' && typeof member !== 'undefined' && member) { %>
               <div class="dchip">Today — <b><%= todayFormatted || '' %></b></div>
               <% if (currentUser && currentUser.role === 'superadmin') { %>

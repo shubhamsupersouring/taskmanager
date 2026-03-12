@@ -20,6 +20,13 @@
         <% if (currentUser && currentUser.role === 'superadmin') { %>
           <a href="/members" class="btn btn-g"><i class="fa-solid fa-pen" style="font-size:11px;"></i> Edit</a>
         <% } %>
+        <% if (currentUser && (currentUser.role === 'superadmin' || (currentUser.member_id && String(currentUser.member_id) === String(member.id)))) { %>
+          <form method="post" action="/members/<%= member.id %>/sync-sheet" class="top-bar-form-inline">
+            <button type="submit" class="btn btn-g">
+              <i class="fa-solid fa-arrows-rotate" style="font-size:11px;"></i> Sync Sheet
+            </button>
+          </form>
+        <% } %>
         <a href="/tasks?member_id=<%= member.id %>&date=<%= new Date().toISOString().slice(0,10) %>" class="btn btn-p"><i class="fa-solid fa-plus" style="font-size:11px;"></i> Add Task</a>
       </div>
     </div>

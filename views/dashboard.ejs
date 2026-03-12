@@ -115,6 +115,7 @@
       var charts = <%- JSON.stringify(charts || {}) %>;
       var statusCfg = charts.weeklyStatus || { labels: [], data: [] };
       var todayCfg = charts.todayByMember || { labels: [], data: [] };
+      var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00d48a';
       var total = (statusCfg.data[0] || 0) + (statusCfg.data[1] || 0) + (statusCfg.data[2] || 0);
       if (total > 0) {
         var pctDone = document.getElementById('pctDone');
@@ -141,7 +142,7 @@
           type: 'bar',
           data: {
             labels: todayCfg.labels,
-            datasets: [{ label: 'Tasks today', data: todayCfg.data, backgroundColor: 'var(--accent)' }]
+            datasets: [{ label: 'Tasks today', data: todayCfg.data, backgroundColor: accent }]
           },
           options: {
             responsive: true,
