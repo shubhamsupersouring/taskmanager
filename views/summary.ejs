@@ -1,63 +1,109 @@
 <%- include('partials/header') %>
 
-  <section class="summary-layout">
-    <div class="card">
-      <div class="card-header">
-        <h2><%= type === 'team' ? 'Team Weekly AI Summary' : ('AI Summary - ' + targetName) %></h2>
-        <a href="<%= backUrl %>" class="btn btn-outline btn-sm">Back</a>
+  <section class="content summary-layout">
+    <!-- META CARD -->
+    <div class="meta-card">
+      <div class="meta-top">
+        <div class="meta-left">
+          <div class="meta-title-row">
+            <div class="ai-badge">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              AI Generated
+            </div>
+            <div class="meta-heading">
+              <%= type === 'team' ? 'Team Weekly AI Summary' : ('AI Summary — ' + targetName) %>
+            </div>
+          </div>
+          <div class="meta-range">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            Date range: <b><%= dateRangeLabel %></b>
+          </div>
+        </div>
       </div>
 
-      <div class="card-body">
-        <p class="text-muted">
-          Date range: <strong><%= dateRangeLabel %></strong>
-        </p>
+      <% if (type === 'team' && noUpdateMembers && noUpdateMembers.length) { %>
+        <div class="no-updates">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Members with <b>no task updates</b> this week:
+            <b><%= noUpdateMembers.join(', ') %></b></span>
+        </div>
+      <% } %>
 
-        <% if (type === 'team' && typeof noUpdateMembers !== 'undefined' && noUpdateMembers && noUpdateMembers.length) { %>
-          <p class="text-muted">
-            Members with <strong>no task updates</strong> this week:
-            <strong><%= noUpdateMembers.join(', ') %></strong>
-          </p>
-        <% } %>
-
+      <div class="ci-section">
+        <div class="ci-label">Custom instructions (optional)</div>
         <form
           method="get"
-          action="<%= type === 'team' ? '/summary/team' : ('/summary/member/' + encodeURIComponent(targetName && targetName.id ? targetName.id : '')) %>"
-          class="filters-form"
-          style="margin-bottom: 0.75rem;"
+          action="<%= type === 'team' ? '/summary/team' : ('/summary/member/' + memberId) %>"
+          class="ci-wrap"
           <%= type === 'team' ? 'data-team-summary-form' : '' %>
         >
-          <% if (typeof memberId !== 'undefined' && type === 'member') { %>
-            <input type="hidden" name="id" value="<%= memberId %>" />
-          <% } %>
-          <div class="form-group" style="flex:1;">
-            <label for="customInstructions">Custom instructions (optional)</label>
-            <textarea id="customInstructions" name="custom" rows="2" placeholder="E.g. Focus more on blockers, or summarize impact for leadership."><%= (typeof queryCustom !== 'undefined' && queryCustom) ? queryCustom : '' %></textarea>
-          </div>
-          <div class="filters-actions">
-            <button type="submit" class="btn btn-primary btn-sm">Regenerate</button>
-          </div>
+          <textarea
+            class="ci-inp"
+            id="customInp"
+            name="custom"
+            placeholder="E.g. Focus more on blockers, or summarize impact for leadership."><%= (typeof queryCustom !== 'undefined' && queryCustom) ? queryCustom : '' %></textarea>
+          <button class="ci-edit" type="submit" title="Regenerate">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
         </form>
+        <div class="meta-actions">
+          <button type="submit" form="<%= type === 'team' ? '' : '' %>" class="btn btn-p">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 100-.49"/>
+            </svg>
+            Regenerate
+          </button>
+        </div>
+      </div>
+    </div>
 
-        <% if (errorMessage) { %>
-          <div class="banner banner-error">
-            <%= errorMessage %>
+    <div class="summary-wrap">
+      <% if (errorMessage) { %>
+        <div class="banner banner-error"><%= errorMessage %></div>
+      <% } %>
+
+      <% if (summaryText) { %>
+        <div class="summary-card" id="summaryCard">
+          <div class="summary-toolbar">
+            <div class="st-left">
+              <div class="gen-info" id="genInfo">
+                <div class="gen-dot"></div>
+                Generated just now · <%= dateRangeLabel %>
+              </div>
+            </div>
+            <button class="copy-btn" id="copyBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+              Copy Summary
+            </button>
           </div>
-        <% } %>
 
-        <% if (summaryText) { %>
-          <div class="summary-card">
+          <div class="summary-body">
             <div class="summary-content"><%- summaryText %></div>
           </div>
-        <% } else if (!errorMessage) { %>
-          <p class="empty-state">No summary available.</p>
-        <% } %>
-      </div>
+        </div>
+      <% } else if (!errorMessage) { %>
+        <div class="loading-state">
+          <div class="loading-icon">
+            <svg class="spin" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 11-9-9"/>
+            </svg>
+          </div>
+          <div class="loading-txt">Analyzing team tasks for the week…</div>
+          <div class="shimmer-lines">
+            <div class="shimmer w80"></div>
+            <div class="shimmer w60"></div>
+            <div class="shimmer w90"></div>
+          </div>
+        </div>
+      <% } %>
     </div>
   </section>
 
   <script src="/script.js"></script>
-      </section>
-    </div>
-  </body>
-</html>
 

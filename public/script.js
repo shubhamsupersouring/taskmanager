@@ -160,6 +160,10 @@ ready(function () {
       if (action.indexOf('/sync-sheet') !== -1) {
         return;
       }
+      // Skip team summary regenerate – uses its own AI loader
+      if (form.hasAttribute('data-team-summary-form')) {
+        return;
+      }
       if (window.showLoader) {
         window.showLoader();
       }
@@ -1236,6 +1240,35 @@ ready(function () {
     }
 
     window.addEventListener('scroll', handleProjectScroll);
+  }
+
+  // Copy Summary button (AI Team Summary page)
+  var copyBtn = document.getElementById('copyBtn');
+  if (copyBtn && navigator.clipboard) {
+    copyBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var content = document.querySelector('.summary-card .summary-content');
+      if (!content) return;
+      // Use visible text (with line breaks) so it pastes cleanly into docs
+      var text =
+        (content.innerText || content.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+      if (!text) return;
+      navigator.clipboard
+        .writeText(text)
+        .then(function () {
+          var original = copyBtn.innerHTML;
+          copyBtn.classList.add('copied');
+          copyBtn.innerHTML =
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Copied!';
+          setTimeout(function () {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = original;
+          }, 2000);
+        })
+        .catch(function () {
+          // ignore failures silently
+        });
+    });
   }
 });
 

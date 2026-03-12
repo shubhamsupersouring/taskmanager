@@ -3370,31 +3370,325 @@ html[data-theme='dark'] .toast.toast-error {
 }
 
 .summary-card {
-  background: #f5f8ff;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
+  background: var(--surf);
+  border-radius: 16px;
+  padding: 20px 22px;
+  border: 1px solid var(--bdr);
+  overflow: hidden;
+  transition: background var(--tr), border-color var(--tr);
 }
 
 .summary-card .summary-content {
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 13px;
+  color: var(--txt2);
+  line-height: 1.7;
 }
 
 .summary-card .summary-content h3 {
-  margin-top: 0.5rem;
-  margin-bottom: 0.25rem;
-  font-size: 1rem;
-  color: var(--primary-dark);
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--accent);
+  margin: 18px 0 6px;
 }
 
-.summary-card .summary-content ul {
+.summary-card .summary-content h3:first-child {
+  margin-top: 0;
+}
+
+.summary-card .summary-content ul,
+.summary-card .summary-content ol {
   padding-left: 1.1rem;
-  margin: 0.2rem 0 0.4rem;
+  margin: 0.2rem 0 0.6rem;
 }
 
 .summary-card .summary-content li {
-  margin-bottom: 0.15rem;
+  margin-bottom: 4px;
+}
+
+/* Copy Summary button */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--bdr);
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--dim2);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.copy-btn svg {
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 212, 138, 0.06);
+}
+
+.copy-btn.copied {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 212, 138, 0.1);
+}
+
+/* Team summary meta + loading UI */
+.meta-card {
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: 16px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+  transition: background var(--tr), border-color var(--tr);
+}
+
+html[data-theme='light'] .meta-card {
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.06);
+}
+
+.meta-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent 60%);
+  border-radius: 16px 16px 0 0;
+}
+
+.meta-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 138, 0.15),
+    rgba(61, 127, 255, 0.1)
+  );
+  border: 1px solid rgba(0, 212, 138, 0.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--accent);
+}
+
+.meta-heading {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt);
+  letter-spacing: -0.3px;
+}
+
+.meta-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--dim2);
+}
+
+.meta-range b {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+.meta-range svg {
+  color: var(--dim);
+}
+
+.no-updates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 184, 0, 0.09);
+  border: 1px solid rgba(255, 184, 0, 0.18);
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--accent3);
+}
+
+.no-updates span b {
+  color: var(--accent3);
+}
+
+.ci-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ci-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+}
+
+.ci-wrap {
+  position: relative;
+}
+
+.ci-inp {
+  width: 100%;
+  background: var(--surf2);
+  border: 1.5px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 11px;
+  padding: 11px 44px 11px 14px;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  min-height: 52px;
+  max-height: 120px;
+  line-height: 1.5;
+  transition: border-color 0.2s, background var(--tr), color var(--tr);
+}
+
+.ci-inp::placeholder {
+  color: var(--dim);
+}
+
+.ci-inp:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 138, 0.1);
+}
+
+.ci-edit {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.ci-edit:hover {
+  color: var(--accent);
+}
+
+.summary-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.loading-state {
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: 16px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+html[data-theme='light'] .loading-state {
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.06);
+}
+
+.shimmer-lines {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shimmer {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--surf2) 0%,
+    var(--surf3) 50%,
+    var(--surf2) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.loading-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 138, 0.15),
+    rgba(61, 127, 255, 0.1)
+  );
+  border: 1px solid rgba(0, 212, 138, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-txt {
+  font-size: 13px;
+  color: var(--dim2);
+  font-weight: 500;
+}
+
+.meta-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
 
 /* Dark mode styling for AI summary content */
