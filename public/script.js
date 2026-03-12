@@ -172,7 +172,13 @@ ready(function () {
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
         return;
       }
-      if (window.showLoader) {
+      if (href.startsWith('/summary/team')) {
+        if (window.openTeamSummaryLoader) {
+          window.openTeamSummaryLoader();
+        } else if (window.showLoader) {
+          window.showLoader();
+        }
+      } else if (window.showLoader) {
         window.showLoader();
       }
     });
@@ -223,6 +229,74 @@ ready(function () {
   if (closeAddTaskModal) closeAddTaskModal.addEventListener('click', closeModal);
   if (closeAddTaskModalBtn) closeAddTaskModalBtn.addEventListener('click', closeModal);
   if (cancelAddTask) cancelAddTask.addEventListener('click', closeModal);
+
+  // Team summary AI loader (progress-style)
+  (function initTeamSummaryLoader() {
+    var loader = document.getElementById('teamSummaryLoader');
+    if (!loader) return;
+
+    var barFill = document.getElementById('aiBarFill');
+    var pctLabel = document.getElementById('aiPctLabel');
+    var statusLabel = document.getElementById('aiStatusLabel');
+    var cancelBtn = document.getElementById('aiCancelBtn');
+    var pct = 0;
+    var timerId = null;
+
+    function getConfig(p) {
+      if (p <= 20) return { delay: 100, label: 'Fetching recent tasks…' }; // 0–20%
+      if (p <= 50) return { delay: 200, label: 'Preparing prompt for Gemini…' }; // 21–50%
+      return { delay: 600, label: 'Generating AI team summary…' }; // 51–100%
+    }
+
+    function step() {
+      if (!loader || !loader.classList.contains('open')) return;
+      if (pct > 100) return;
+      var cfg = getConfig(pct);
+      if (barFill) barFill.style.width = pct + '%';
+      if (pctLabel) pctLabel.textContent = pct + '%';
+      if (statusLabel) statusLabel.textContent = cfg.label;
+      if (pct === 100) {
+        if (statusLabel) statusLabel.textContent = 'Done!';
+        return;
+      }
+      pct += 1;
+      var nextDelay = getConfig(pct).delay;
+      timerId = window.setTimeout(step, nextDelay);
+    }
+
+    function openTeamLoader() {
+      if (!loader) return;
+      loader.classList.add('open');
+      pct = 0;
+      if (barFill) barFill.style.width = '0%';
+      if (pctLabel) pctLabel.textContent = '0%';
+      if (statusLabel) statusLabel.textContent = 'Fetching recent tasks…';
+      if (timerId) window.clearTimeout(timerId);
+      timerId = window.setTimeout(step, 300);
+    }
+
+    function closeTeamLoader() {
+      if (!loader) return;
+      loader.classList.remove('open');
+      if (timerId) window.clearTimeout(timerId);
+    }
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', function () {
+        closeTeamLoader();
+      });
+    }
+
+    // Show loader on team summary regenerate submits
+    document.querySelectorAll('form[data-team-summary-form]').forEach(function (form) {
+      form.addEventListener('submit', function () {
+        openTeamLoader();
+      });
+    });
+
+    window.openTeamSummaryLoader = openTeamLoader;
+    window.closeTeamSummaryLoader = closeTeamLoader;
+  })();
 
   if (typeof window.initialQuickMemberId !== 'undefined' && window.initialQuickMemberId) {
     if (memberSelect) {

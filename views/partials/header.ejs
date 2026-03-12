@@ -23,6 +23,31 @@
     <div id="globalLoader" class="loader-backdrop" style="display: none;">
       <div class="loader-spinner"></div>
     </div>
+    <div class="ai-loader-backdrop" id="teamSummaryLoader">
+      <div class="ai-loader-modal">
+        <div class="ai-loader-header">
+          <div class="ai-loader-title">Team weekly AI summary</div>
+          <div class="ai-loader-sub">
+            Fetching recent tasks and asking Gemini to prepare a concise weekly report for your team.
+          </div>
+        </div>
+        <div class="ai-loader-wrap">
+          <div class="ai-loader-top">
+            <div class="ai-loader-status">
+              <div class="ai-spinner" id="aiSpinner"></div>
+              <span class="ai-status-label" id="aiStatusLabel">Fetching…</span>
+            </div>
+            <span class="ai-pct-label" id="aiPctLabel">0%</span>
+          </div>
+          <div class="ai-bar-bg">
+            <div class="ai-bar-fill" id="aiBarFill"></div>
+          </div>
+        </div>
+        <div class="ai-loader-footer">
+          <button type="button" class="ai-loader-cancel" id="aiCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div id="toastContainer" class="toast-container"></div>
     <div class="app-container">
       <%- include('sidebar') %>
@@ -52,27 +77,11 @@
               <% } %>
             <% } else if (typeof topBarVariant !== 'undefined' && topBarVariant === 'tasks') { %>
               <div class="dchip">Today — <b><%= todayFormatted || '' %></b></div>
-              <% if (currentUser && currentUser.role === 'superadmin') { %>
-                <form method="post" action="/tasks/sync-sheet" class="top-bar-form-inline">
-                  <button type="submit" class="btn btn-g">
-                    <i class="fa-solid fa-arrows-rotate" style="font-size:11px;"></i> Sync Sheet
-                  </button>
-                </form>
-              <% } else if (currentUser && currentUser.member_id) { %>
-                <form method="post" action="/tasks/sync-own" class="top-bar-form-inline">
-                  <button type="submit" class="btn btn-g">
-                    <i class="fa-solid fa-arrows-rotate" style="font-size:11px;"></i> Sync My Tasks
-                  </button>
-                </form>
-              <% } %>
               <button type="button" class="btn btn-p" id="openAddTaskModal">
                 <i class="fa-solid fa-plus" style="font-size:11px;"></i> Add Task
               </button>
             <% } else { %>
-              <div class="today-date">
-                <span>Today</span>
-                <strong><%= todayFormatted || '' %></strong>
-              </div>
+              <div class="dchip">Today — <b><%= todayFormatted || '' %></b></div>
             <% } %>
           </div>
         </header>

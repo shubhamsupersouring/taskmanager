@@ -222,16 +222,26 @@
         var gridBtn = document.getElementById('viewGrid');
         var listBtn = document.getElementById('viewList');
         if (gridBtn && listBtn) {
-          gridBtn.addEventListener('click', function () {
+          var isMobile = window.innerWidth <= 768;
+
+          if (isMobile) {
+            // Force grid view on mobile and hide list toggle
             grid.classList.remove('list-view');
             gridBtn.classList.add('active');
             listBtn.classList.remove('active');
-          });
-          listBtn.addEventListener('click', function () {
-            grid.classList.add('list-view');
-            listBtn.classList.add('active');
-            gridBtn.classList.remove('active');
-          });
+            listBtn.style.display = 'none';
+          } else {
+            gridBtn.addEventListener('click', function () {
+              grid.classList.remove('list-view');
+              gridBtn.classList.add('active');
+              listBtn.classList.remove('active');
+            });
+            listBtn.addEventListener('click', function () {
+              grid.classList.add('list-view');
+              listBtn.classList.add('active');
+              gridBtn.classList.remove('active');
+            });
+          }
         }
       }
 

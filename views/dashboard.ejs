@@ -23,12 +23,11 @@
         </div>
         <div class="team-grid">
           <% if (memberCards && memberCards.length) { %>
-            <% const gradients = ['linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#00d48a,#009e68)','linear-gradient(135deg,#fa709a,#fee140)','linear-gradient(135deg,#a18cd1,#fbc2eb)','linear-gradient(135deg,#f7971e,#ffd200)','linear-gradient(135deg,#43e97b,#38f9d7)','linear-gradient(135deg,#f6d365,#fda085)']; %>
-            <% memberCards.forEach(function(member, idx) { %>
+            <% memberCards.forEach(function(member) { %>
               <div class="mc <%= member.todayCount > 0 ? 'active-mc' : '' %>">
                 <div class="mc-top">
                   <div class="mc-info">
-                    <div class="mc-av" style="background:<%= gradients[idx % gradients.length] %>">
+                    <div class="mc-av">
                       <%= (member.name || '?').split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase() %>
                     </div>
                     <div>
