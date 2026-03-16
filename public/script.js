@@ -890,18 +890,41 @@ ready(function () {
         });
     }
 
+    var taskScrollContainer = document.querySelector('.main-content') || window;
+
     function handleScroll() {
       if (!hasMore || loading) return;
 
-      var scrollPosition = window.innerHeight + window.scrollY;
-      var threshold = document.body.offsetHeight - 200;
+      var scrollPosition;
+      var threshold;
+
+      if (taskScrollContainer === window) {
+        scrollPosition = window.innerHeight + window.scrollY;
+        threshold = document.body.offsetHeight - 200;
+      } else {
+        scrollPosition =
+          taskScrollContainer.scrollTop + taskScrollContainer.clientHeight;
+        threshold = taskScrollContainer.scrollHeight - 200;
+      }
 
       if (scrollPosition >= threshold) {
         loadMoreTasks();
       }
     }
 
-    window.addEventListener('scroll', handleScroll);
+    taskScrollContainer.addEventListener('scroll', handleScroll);
+
+    // If container is too short to scroll, pre-load next page once
+    if (
+      hasMore &&
+      ((taskScrollContainer === window &&
+        document.body.offsetHeight <= window.innerHeight + 50) ||
+        (taskScrollContainer !== window &&
+          taskScrollContainer.scrollHeight <=
+            taskScrollContainer.clientHeight + 50))
+    ) {
+      loadMoreTasks();
+    }
   }
 
   // Infinite scroll for members
@@ -1065,16 +1088,39 @@ ready(function () {
         });
     }
 
+    var memberScrollContainer = document.querySelector('.main-content') || window;
+
     function handleMemberScroll() {
       if (!mHasMore || mLoading) return;
-      var scrollPosition = window.innerHeight + window.scrollY;
-      var threshold = document.body.offsetHeight - 200;
+
+      var scrollPosition;
+      var threshold;
+      if (memberScrollContainer === window) {
+        scrollPosition = window.innerHeight + window.scrollY;
+        threshold = document.body.offsetHeight - 200;
+      } else {
+        scrollPosition =
+          memberScrollContainer.scrollTop +
+          memberScrollContainer.clientHeight;
+        threshold = memberScrollContainer.scrollHeight - 200;
+      }
       if (scrollPosition >= threshold) {
         loadMoreMembers();
       }
     }
 
-    window.addEventListener('scroll', handleMemberScroll);
+    memberScrollContainer.addEventListener('scroll', handleMemberScroll);
+
+    if (
+      mHasMore &&
+      ((memberScrollContainer === window &&
+        document.body.offsetHeight <= window.innerHeight + 50) ||
+        (memberScrollContainer !== window &&
+          memberScrollContainer.scrollHeight <=
+            memberScrollContainer.clientHeight + 50))
+    ) {
+      loadMoreMembers();
+    }
   }
 
   // Infinite scroll for projects
@@ -1230,16 +1276,39 @@ ready(function () {
         });
     }
 
+    var projectScrollContainer = document.querySelector('.main-content') || window;
+
     function handleProjectScroll() {
       if (!pHasMore || pLoading) return;
-      var scrollPosition = window.innerHeight + window.scrollY;
-      var threshold = document.body.offsetHeight - 200;
+
+      var scrollPosition;
+      var threshold;
+      if (projectScrollContainer === window) {
+        scrollPosition = window.innerHeight + window.scrollY;
+        threshold = document.body.offsetHeight - 200;
+      } else {
+        scrollPosition =
+          projectScrollContainer.scrollTop +
+          projectScrollContainer.clientHeight;
+        threshold = projectScrollContainer.scrollHeight - 200;
+      }
       if (scrollPosition >= threshold) {
         loadMoreProjects();
       }
     }
 
-    window.addEventListener('scroll', handleProjectScroll);
+    projectScrollContainer.addEventListener('scroll', handleProjectScroll);
+
+    if (
+      pHasMore &&
+      ((projectScrollContainer === window &&
+        document.body.offsetHeight <= window.innerHeight + 50) ||
+        (projectScrollContainer !== window &&
+          projectScrollContainer.scrollHeight <=
+            projectScrollContainer.clientHeight + 50))
+    ) {
+      loadMoreProjects();
+    }
   }
 
   // Copy Summary button (AI Team Summary page)
